@@ -36,7 +36,6 @@
         }
 
         [data-theme="light"] body { background-color: #f5f0e8; background-image: none; }
-        [data-theme="light"] nav { background: rgba(245, 240, 232, 0.85); color: var(--ink); }
         [data-theme="light"] #loader { background: #f5f0e8; }
         [data-theme="light"] #grain { opacity: 0.03; }
         [data-theme="light"] ::selection { background: var(--accent); color: #f5f0e8; }
@@ -248,20 +247,28 @@
             z-index: 1000;
             font-family: var(--font-mono); text-transform: uppercase;
             font-size: 0.75rem; letter-spacing: 1px;
-            background: rgba(10, 10, 10, 0.6); backdrop-filter: blur(8px);
-            transition: padding 0.4s ease, background 0.4s ease;
+            background: rgba(10, 10, 10, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid transparent;
+            color: var(--ink);
+            transition: padding 0.4s ease, background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
         }
         nav.nav-scrolled {
             padding: 18px 50px;
-            background: rgba(10, 10, 10, 0.88);
+            background: rgba(10, 10, 10, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
         }
-        .nav-left { font-weight: 500; }
-        .nav-right { display: flex; align-items: center; gap: 14px; white-space: nowrap; }
-        .dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; flex-shrink: 0; }
+        .nav-left { font-weight: 500; color: var(--ink); }
+        .nav-right { display: flex; align-items: center; gap: 14px; white-space: nowrap; color: var(--ink); }
+        .nav-right span { color: var(--muted); }
+        .dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; flex-shrink: 0; box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.6); }
         #theme-toggle {
-            background: transparent;
-            border: 1px solid transparent;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             color: var(--ink);
             font-family: var(--font-mono);
             font-size: 0.75rem;
@@ -272,7 +279,46 @@
             transition: all 0.3s;
             border-radius: 4px;
         }
-        #theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+        #theme-toggle:hover { color: var(--accent); border-color: var(--accent); background: rgba(var(--accent-rgb), 0.1); }
+
+        /* Nav Light Mode */
+        [data-theme="light"] nav {
+            background: rgba(245, 240, 232, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(26, 18, 8, 0.08);
+            color: var(--ink);
+        }
+        [data-theme="light"] nav.nav-scrolled {
+            background: rgba(245, 240, 232, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(138, 90, 0, 0.22);
+            box-shadow: 0 4px 20px rgba(26, 18, 8, 0.07);
+        }
+        [data-theme="light"] .nav-left {
+            color: var(--ink);
+        }
+        [data-theme="light"] .nav-right {
+            color: var(--ink);
+        }
+        [data-theme="light"] .nav-right span {
+            color: var(--muted);
+        }
+        [data-theme="light"] #theme-toggle {
+            color: var(--ink);
+            border: 1px solid rgba(26, 18, 8, 0.18);
+            background: rgba(26, 18, 8, 0.04);
+        }
+        [data-theme="light"] #theme-toggle:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: rgba(138, 90, 0, 0.08);
+        }
+        [data-theme="light"] .dot {
+            background: var(--accent);
+            box-shadow: 0 0 8px rgba(138, 90, 0, 0.6);
+        }
 
         @media (max-width: 600px) {
             #theme-toggle { 
