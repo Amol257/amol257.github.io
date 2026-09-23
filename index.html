@@ -7,6 +7,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&display=swap" rel="stylesheet">
+    
+    <!-- Lenis Smooth Scroll CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/lenis@1.1.20/dist/lenis.css">
+
     <style>
         :root {
             --bg: #000000;
@@ -99,7 +103,31 @@
         [data-theme="light"] .exp-quote strong { text-shadow: 0 0 10px rgba(138, 90, 0, 0.35) !important; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
-        html { scroll-behavior: smooth; }
+        
+        /* Lenis setup: ensure native smooth scroll is disabled so Lenis drives RAF cleanly */
+        html {
+            scroll-behavior: auto !important;
+        }
+
+        html.lenis, html.lenis body {
+            height: auto;
+        }
+
+        .lenis.lenis-smooth {
+            scroll-behavior: auto !important;
+        }
+
+        .lenis.lenis-smooth [data-lenis-prevent] {
+            overscroll-behavior: contain;
+        }
+
+        .lenis.lenis-stopped {
+            overflow: hidden;
+        }
+
+        .lenis.lenis-smooth iframe {
+            pointer-events: none;
+        }
 
         body {
             background-color: var(--bg);
@@ -201,14 +229,15 @@
             from { transform: scaleX(0); }
             to   { transform: scaleX(1); }
         }
-        #loader-line.active {
-            animation: lineExpand 0.8s ease forwards;
-        }
 
-        /* Scroll progress */
+        /* Scroll progress bar with luminous gradient */
         #scroll-progress {
-            position: fixed; top: 0; left: 0; height: 2px;
-            background: var(--accent); width: 0%; z-index: 1001; transform-origin: left;
+            position: fixed; top: 0; left: 0; height: 3px;
+            background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.6), var(--accent));
+            box-shadow: 0 0 12px var(--accent);
+            width: 0%; z-index: 1001; transform-origin: left;
+            pointer-events: none;
+            will-change: width;
         }
 
         /* Nav */
@@ -220,6 +249,12 @@
             font-family: var(--font-mono); text-transform: uppercase;
             font-size: 0.75rem; letter-spacing: 1px;
             background: rgba(10, 10, 10, 0.6); backdrop-filter: blur(8px);
+            transition: padding 0.4s ease, background 0.4s ease;
+        }
+        nav.nav-scrolled {
+            padding: 18px 50px;
+            background: rgba(10, 10, 10, 0.88);
+            border-bottom: 1px solid var(--border);
         }
         .nav-left { font-weight: 500; }
         .nav-right { display: flex; align-items: center; gap: 14px; white-space: nowrap; }
@@ -281,15 +316,40 @@
             display: flex; flex-direction: column;
             border-bottom: 1px solid var(--border);
             position: relative;
-            opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease;
         }
-        section.revealed { opacity: 1; transform: translateY(0); }
+
+        /* ── SCROLL REVEAL ANIMATIONS ── */
+        .reveal-item {
+            opacity: 0;
+            transform: translateY(32px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+        .reveal-item.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal-stagger > * {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+        .reveal-stagger.revealed > *:nth-child(1) { transition-delay: 0.04s; opacity: 1; transform: translateY(0); }
+        .reveal-stagger.revealed > *:nth-child(2) { transition-delay: 0.12s; opacity: 1; transform: translateY(0); }
+        .reveal-stagger.revealed > *:nth-child(3) { transition-delay: 0.20s; opacity: 1; transform: translateY(0); }
+        .reveal-stagger.revealed > *:nth-child(4) { transition-delay: 0.28s; opacity: 1; transform: translateY(0); }
+        .reveal-stagger.revealed > *:nth-child(5) { transition-delay: 0.36s; opacity: 1; transform: translateY(0); }
+        .reveal-stagger.revealed > *:nth-child(6) { transition-delay: 0.44s; opacity: 1; transform: translateY(0); }
+        .reveal-stagger.revealed > *:nth-child(7) { transition-delay: 0.52s; opacity: 1; transform: translateY(0); }
 
         .section-header {
             display: flex; gap: 20px; margin-bottom: 70px;
             font-family: var(--font-mono); font-size: 0.8rem;
             text-transform: uppercase; letter-spacing: 3px;
             font-variant-numeric: tabular-nums;
+            align-items: center;
         }
         .section-num { color: var(--muted); min-width: 40px; transition: color 0.3s; }
         .section-num.active { color: var(--accent); }
@@ -300,6 +360,7 @@
             min-height: 100vh; padding: 0 50px;
             display: flex; flex-direction: column; justify-content: space-between;
             padding-top: 80px; padding-bottom: 60px;
+            will-change: transform, opacity;
         }
         .hero-top {
             display: flex; justify-content: space-between; align-items: flex-start;
@@ -311,7 +372,8 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            margin: 60px 0; 
+            margin: 60px 0;
+            will-change: transform, opacity;
         }
         .hero-headline {
             font-family: var(--font-display);
@@ -381,25 +443,27 @@
             backdrop-filter: blur(10px);
             box-shadow: 0 20px 40px rgba(0,0,0,0.4);
             margin-top: 40px;
+            transition: border-color 0.4s ease;
         }
 
         @media (min-width: 1100px) {
             .dashboard-pane {
                 position: sticky;
-                top: 100px;
-                height: 680px;
-                min-height: 680px;
+                top: max(60px, calc(50vh - 265px));
+                height: min(530px, calc(100vh - 85px));
+                min-height: 460px;
                 margin-top: 0;
             }
         }
 
         .dashboard-header {
-            padding: 16px;
+            padding: 10px 14px;
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: rgba(200, 255, 0, 0.03);
+            flex-shrink: 0;
         }
 
         .dashboard-title {
@@ -409,7 +473,6 @@
             letter-spacing: 2px;
             color: var(--accent);
         }
-
 
         .dashboard-status {
             font-family: var(--font-mono);
@@ -440,11 +503,13 @@
 
         .dashboard-content {
             flex: 1;
-            padding: 24px;
+            padding: 10px 12px 8px;
             position: relative;
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 8px;
+            min-height: 0;
+            overflow: hidden;
             transition: opacity 0.3s ease;
         }
 
@@ -514,28 +579,32 @@
         /* Complex Dashboard Layout Styles */
         .db-main-grid {
             display: grid;
-            grid-template-columns: 1.4fr 1fr;
-            gap: 12px;
+            grid-template-columns: 1.32fr 1fr;
+            gap: 8px;
             position: relative;
             z-index: 2;
-            height: calc(100% - 80px);
-            padding: 12px;
+            flex: 1;
+            min-height: 0;
+            padding: 0;
+            height: auto;
         }
 
         .map-panel, .table-card, .db-kpi-item {
             background: rgba(0,0,0,0.55);
             border: 1px solid var(--border);
             border-radius: 4px;
-            padding: 12px;
+            padding: 8px 10px;
             display: flex;
             flex-direction: column;
+            min-height: 0;
         }
 
         .panel-header {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 12px;
+            margin-bottom: 6px;
+            flex-shrink: 0;
         }
 
         .panel-dot {
@@ -546,7 +615,7 @@
         }
 
         .panel-label {
-            font-size: 9px;
+            font-size: 8.5px;
             letter-spacing: 0.15em;
             text-transform: uppercase;
             color: var(--muted);
@@ -558,22 +627,32 @@
             position: relative;
             display: flex;
             flex-direction: column;
-            min-height: 200px;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .map-area .svg-viz {
+            width: 100%;
+            height: 100%;
+            max-height: 240px;
+            object-fit: contain;
         }
 
         .map-legend {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 6px 10px;
+            padding: 5px 8px;
             background: rgba(255,255,255,0.03);
             border: 1px solid var(--border);
             border-radius: 3px;
-            margin-top: 10px;
+            margin-top: 6px;
+            flex-shrink: 0;
         }
 
         .legend-text {
-            font-size: 8px;
+            font-size: 7.5px;
             color: var(--muted);
             font-family: var(--font-mono);
         }
@@ -581,13 +660,14 @@
         .map-overlay-stats {
             display: flex;
             justify-content: space-between;
-            margin-top: 12px;
+            margin-top: 6px;
             border-top: 1px solid var(--border);
-            padding-top: 10px;
+            padding-top: 6px;
+            flex-shrink: 0;
         }
 
         .stat-val-small {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--accent);
             font-weight: 500;
         }
@@ -595,46 +675,49 @@
         .kpi-column {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 6px;
+            min-height: 0;
         }
 
         .kpi-mini-card {
             background: rgba(255,255,255,0.03);
             border: 1px solid var(--border);
             border-radius: 4px;
-            padding: 10px;
+            padding: 6px 8px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
+            flex-shrink: 0;
         }
 
         .kpi-mini-row { display: flex; justify-content: space-between; align-items: center; }
-        .kpi-mini-val { font-size: 14px; font-weight: 600; color: var(--ink); }
+        .kpi-mini-val { font-size: 13px; font-weight: 600; color: var(--ink); }
         .kpi-mini-bar-bg { width: 100%; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
         .kpi-mini-bar-fill { height: 100%; background: var(--accent); width: 0; transition: width 1s ease; }
 
-        .table-card { padding: 0; overflow: hidden; flex: 1; }
+        .table-card { padding: 0; overflow: hidden; flex: 1; min-height: 0; display: flex; flex-direction: column; }
         .table-head {
             display: grid;
             grid-template-columns: 1.2fr 1fr 1fr;
-            padding: 8px 12px;
+            padding: 5px 8px;
             background: rgba(var(--accent-rgb), 0.1);
             border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
         }
-        .th-cell { font-size: 8px; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+        .th-cell { font-size: 7.5px; text-transform: uppercase; color: var(--accent); font-weight: 600; }
         .table-body {
             flex: 1;
             overflow-y: auto;
-            max-height: 180px;
+            max-height: 125px;
             scrollbar-width: none;
         }
         .table-body::-webkit-scrollbar { display: none; }
         .tr-row {
             display: grid;
             grid-template-columns: 1.2fr 1fr 1fr;
-            padding: 6px 12px;
+            padding: 3.5px 8px;
             border-bottom: 1px solid rgba(255,255,255,0.03);
-            font-size: 9px;
+            font-size: 8.5px;
             color: var(--muted);
         }
         .td-cell:last-child { text-align: right; color: var(--ink); font-weight: 500; }
@@ -674,42 +757,43 @@
             50% { opacity: 1; r: 5.5; }
         }
 
-        /* Scanline Sweep (Manual) */
-
-
         /* AQI Gauge Styles */
         .aqi-gauge-container {
             width: 100%; height: 100%;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            padding: 10px;
+            padding: 2px 0;
         }
-        .aqi-top-label { font-size: 8px; font-family: var(--font-mono); color: var(--accent); letter-spacing: 2px; margin-bottom: 4px; }
-        .aqi-main-status { font-size: 28px; font-family: var(--font-display); color: #fff; margin-bottom: 5px; }
+        .aqi-top-label { font-size: 7.5px; font-family: var(--font-mono); color: var(--accent); letter-spacing: 2px; margin-bottom: 2px; }
+        .aqi-main-status { font-size: 20px; font-family: var(--font-display); color: #fff; margin-bottom: 2px; }
         .aqi-footer-stats {
             width: 100%;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 15px;
-            margin-top: 20px;
-            padding-top: 15px;
+            gap: 8px;
+            margin-top: 8px;
+            padding-top: 6px;
             border-top: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
         }
-        .aqi-f-item { display: flex; flex-direction: column; gap: 4px; text-align: center; }
-        .aqi-f-label { font-size: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
-        .aqi-f-val { font-size: 18px; font-family: var(--font-display); color: #fff; line-height: 1; }
-        .aqi-f-sub { font-size: 9px; color: var(--muted); margin-top: 2px; }
+        .aqi-f-item { display: flex; flex-direction: column; gap: 2px; text-align: center; }
+        .aqi-f-label { font-size: 7px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
+        .aqi-f-val { font-size: 15px; font-family: var(--font-display); color: #fff; line-height: 1; }
+        .aqi-f-sub { font-size: 8px; color: var(--muted); margin-top: 1px; }
 
         .dashboard-footer {
-            padding: 0 12px 12px;
+            padding: 0;
+            margin-top: 2px;
+            flex-shrink: 0;
         }
 
         .terminal-box {
             background: rgba(0,0,0,0.4);
             border: 1px solid var(--border);
-            padding: 8px 12px;
+            padding: 5px 8px;
             font-family: var(--font-mono);
-            font-size: 8px;
+            font-size: 7.5px;
+            line-height: 1.2;
             color: var(--muted);
             border-radius: 3px;
         }
@@ -740,6 +824,8 @@
             width: 100%; overflow: hidden;
             border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
             padding: 18px 0; white-space: nowrap;
+            will-change: transform;
+            transition: transform 0.2s ease-out;
         }
         .marquee-container.accent-bg { background: var(--accent); color: #000; border-color: var(--accent); }
         .marquee-container.accent-text { color: var(--accent); }
@@ -748,6 +834,7 @@
             font-family: var(--font-display); font-size: clamp(22px, 3.5vw, 34px);
             animation: scroll 40s linear infinite; letter-spacing: 2px;
             width: fit-content;
+            will-change: transform;
         }
         .marquee-container:hover .marquee-content { animation-play-state: paused; }
         .reverse .marquee-content { animation-direction: reverse; }
@@ -761,15 +848,20 @@
             height: 1px;
             width: 100%;
             background: linear-gradient(90deg, transparent, var(--accent), transparent);
-            opacity: 0.6;
-            margin-top: -1px; /* Overlap the section border above */
-            margin-bottom: 20px; /* Closer to the marquee content */
+            opacity: 0.2;
+            margin-top: -1px;
+            margin-bottom: 20px;
             box-shadow: 0 0 15px var(--accent);
-            animation: pulse-line 3s ease-in-out infinite;
+            transform: scaleX(0.1);
+            transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.9s ease;
             position: relative;
             z-index: 20;
+            transform-origin: center;
         }
-        @keyframes pulse-line { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.6; } }
+        .marquee-divider.revealed {
+            transform: scaleX(1);
+            opacity: 0.7;
+        }
 
         /* About */
         #about { display: grid; grid-template-columns: 1fr 1.5fr; gap: 80px; align-items: start; }
@@ -795,7 +887,7 @@
         .skill-row {
             display: grid; grid-template-columns: 240px 1fr; gap: 40px;
             padding: 32px 0; border-bottom: 1px solid var(--border);
-            transition: all 0.15s; align-items: center;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); align-items: center;
             position: relative; overflow: hidden;
         }
         .skill-row:hover {
@@ -950,41 +1042,191 @@
             margin-bottom: 6px;
         }
 
-        .building-section {
-            margin-top: 45px;
-            padding-top: 28px;
-            border-top: 1px dashed var(--border);
-        }
-        .building-title {
-            font-family: var(--font-mono);
-            font-size: 1.4rem;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 14px;
-            font-weight: 500;
-        }
-        .building-content {
-            font-family: var(--font-serif);
-            font-size: 1.05rem;
-            color: rgba(240,236,228,0.65);
-            line-height: 1.7;
-            max-width: 900px;
+        /* Projects */
+        .projects-list {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            padding-bottom: 20px;
         }
 
-        /* Projects */
-        .project-row {
-            padding: 46px 0; border-bottom: 1px solid var(--border);
-            position: relative; transition: all 0.3s; cursor: pointer;
+        .projects-end-indicator {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding-top: 16px;
+            opacity: 0.35;
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
-        .project-row:hover { transform: translateY(-2px); border-left: 4px solid var(--accent); padding-left: 20px; }
-        .project-main { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; gap: 30px; }
-        .project-name { font-family: var(--font-display); font-size: clamp(2.2rem, 5.5vw, 4rem); text-transform: uppercase; line-height: 1; letter-spacing: -1px; }
-        .project-year { font-family: var(--font-mono); color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
-        .project-meta { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 0.82rem; gap: 20px; }
-        .project-tags { color: var(--muted); }
-        .view-link { color: var(--accent); transition: color 0.3s; }
-        .project-row:hover .view-link { color: var(--ink); }
+        .projects-end-indicator .end-line {
+            height: 1px;
+            width: 40px;
+            background: var(--accent);
+        }
+
+        .project-row {
+            min-height: 290px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 28px 32px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.018);
+            position: relative;
+            transition: border-color 0.3s ease, background-color 0.3s ease, padding-left 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+        [data-theme="light"] .project-row {
+            background: rgba(0, 0, 0, 0.02);
+        }
+        .project-row:hover,
+        .project-row.active-scroll {
+            border-color: var(--accent);
+            border-left: 4px solid var(--accent);
+            padding-left: 38px;
+            background: rgba(var(--accent-rgb), 0.04);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+        .project-row.active-scroll .project-name {
+            color: var(--accent);
+            text-shadow: 0 0 15px rgba(200, 255, 0, 0.5);
+        }
+        [data-theme="light"] .project-row.active-scroll .project-name {
+            text-shadow: 0 0 15px rgba(138, 90, 0, 0.45) !important;
+        }
+
+        @media (max-width: 900px) {
+            .projects-list { gap: 24px; padding-bottom: 40px; }
+            .project-row { min-height: auto; }
+        }
+
+        .project-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            letter-spacing: 1.5px;
+            margin-bottom: 10px;
+        }
+        .project-num-tag {
+            color: var(--accent);
+            font-weight: 500;
+        }
+        .project-top-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .project-year {
+            color: var(--muted);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+        .view-link {
+            color: var(--accent);
+            transition: color 0.25s;
+            font-weight: 500;
+        }
+        .project-row:hover .view-link {
+            color: var(--ink);
+        }
+
+        .project-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 10px;
+            gap: 20px;
+        }
+        .project-name {
+            font-family: var(--font-display);
+            font-size: clamp(1.9rem, 3.6vw, 2.9rem);
+            text-transform: uppercase;
+            line-height: 1;
+            letter-spacing: -0.5px;
+            transition: color 0.3s, text-shadow 0.3s, transform 0.3s;
+            display: inline-block;
+        }
+        .project-row:hover .project-name {
+            color: var(--accent);
+            text-shadow: 0 0 15px rgba(200, 255, 0, 0.6);
+        }
+
+        /* Direct Visible Project Details */
+        .project-impact-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(var(--accent-rgb), 0.08);
+            border: 1px solid rgba(var(--accent-rgb), 0.25);
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--accent);
+            font-weight: 500;
+            margin-bottom: 12px;
+            letter-spacing: 0.4px;
+            width: fit-content;
+        }
+        .project-impact-pill .pill-icon {
+            font-size: 0.7rem;
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+        [data-theme="light"] .project-impact-pill {
+            background: rgba(138, 90, 0, 0.08);
+            border-color: rgba(138, 90, 0, 0.25);
+            color: var(--accent);
+        }
+
+        .project-summary-text {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: rgba(240, 236, 228, 0.75);
+            line-height: 1.65;
+            margin-bottom: 16px;
+            max-width: 660px;
+        }
+        [data-theme="light"] .project-summary-text {
+            color: rgba(26, 18, 8, 0.75);
+        }
+
+        .project-tags-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .project-toggle-hint {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.3s;
+            margin-top: 4px;
+        }
+        .project-row:hover .project-toggle-hint {
+            color: var(--accent);
+        }
+        .project-row.open .project-toggle-hint::after {
+            content: ' [ — CLOSE CASE STUDY ]';
+        }
+        .project-row:not(.open) .project-toggle-hint::after {
+            content: ' [ + FULL CASE STUDY & METRICS ]';
+        }
+
         .project-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1; opacity: 0; transition: opacity 0.5s;
@@ -1017,18 +1259,9 @@
         .project-row:hover .project-codestream {
             opacity: 0.45;
         }
-        .project-main, .project-meta, .project-desc {
+        .project-top-row, .project-main, .project-impact-pill, .project-summary-text, .project-tags-row, .project-toggle-hint, .project-desc {
             position: relative;
             z-index: 1;
-        }
-        .project-name {
-            transition: color 0.3s, text-shadow 0.3s, transform 0.3s;
-            display: inline-block;
-        }
-        .project-row:hover .project-name {
-            color: var(--accent);
-            text-shadow: 0 0 15px rgba(200, 255, 0, 0.6);
-            transform: scale(1.02);
         }
 
         .code-row-inner { display: inline-block; }
@@ -1052,67 +1285,22 @@
             to { top: calc(100% + 160px); }
         }
 
-
-
         .project-desc-inner {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0;
-            border-top: 1px solid var(--border);
-            margin-top: 24px;
-        }
-        .project-desc-left {
-            padding: 28px 32px 28px 0;
-            border-right: 3px solid var(--accent);
-        }
-        .project-desc-right {
-            padding: 28px 0 28px 32px;
-        }
-        .project-impact-label {
-            font-family: var(--font-mono);
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            color: var(--accent);
-            margin-bottom: 10px;
-        }
-        .project-impact-line {
-            font-family: var(--font-display);
-            font-size: clamp(1.3rem, 2.5vw, 1.9rem);
-            line-height: 1.1;
-            text-transform: uppercase;
-            letter-spacing: -0.5px;
-            margin-bottom: 18px;
+            border-top: 1px dashed var(--border);
+            margin-top: 16px;
+            padding-top: 20px;
         }
         .project-story {
             font-family: var(--font-mono);
             font-size: 0.78rem;
-            color: rgba(240,236,228,0.6);
+            color: rgba(240,236,228,0.65);
             line-height: 1.7;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
         }
         .project-story span { display: flex; gap: 10px; }
-        .project-story .story-label { color: var(--accent); flex-shrink: 0; min-width: 60px; }
-        .project-desc-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 20px;
-        }
-        .project-toggle-hint {
-            font-family: var(--font-mono);
-            font-size: 0.68rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 12px;
-            transition: color 0.3s;
-        }
-        .project-row:hover .project-toggle-hint { color: var(--accent); }
-        .project-row.open .project-toggle-hint::after { content: ' [ — CLOSE ]'; }
-        .project-row:not(.open) .project-toggle-hint::after { content: ' [ + EXPAND ]'; }
+        .project-story .story-label { color: var(--accent); flex-shrink: 0; min-width: 65px; font-weight: 600; }
 
         /* Education */
         .edu-grid { display: flex; flex-direction: column; }
@@ -1217,6 +1405,7 @@
             z-index: 0;
             opacity: 0;
             animation: gridFadeIn 2s 1.8s ease forwards;
+            will-change: transform, opacity;
         }
         @keyframes gridFadeIn { to { opacity: 1; } }
 
@@ -1229,7 +1418,7 @@
         #contact { min-height: 80vh !important; }
 
         /* Final Polish Components */
-        .exp-row { transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1); border-top: 1px solid var(--border); overflow: hidden; }
+        .exp-row { transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1); border-top: 1px solid var(--border); overflow: hidden; }
         .exp-row:hover { background: rgba(200, 255, 0, 0.03); padding-left: 15px; border-left: 3px solid var(--accent); }
         .tag {
             background: rgba(240, 236, 228, 0.04);
@@ -1253,16 +1442,217 @@
             transform: translateY(-2px);
         }
 
+        .mobile-project-bar {
+            display: none;
+        }
+        .project-mobile-viz {
+            display: none;
+        }
+
         /* --- RESPONSIVE DESIGN --- */
-        @media (max-width: 1100px) {
-            .projects-wrapper { grid-template-columns: 1fr; gap: 50px; }
-            .dashboard-pane { min-height: 580px; margin-top: 20px; }
+        @media (max-width: 1024px) {
+            .projects-wrapper {
+                display: flex;
+                flex-direction: column;
+                position: relative;
+            }
+
+            /* Hide the separate bulky sticky dashboard on mobile viewports */
+            .dashboard-pane {
+                display: none !important;
+            }
+
+            /* Sleek, ultra-compact sticky project jumper bar (only 36px tall, stays flush with navbar) */
+            .mobile-project-bar {
+                display: block;
+                position: sticky;
+                top: 48px;
+                z-index: 60;
+                background: rgba(10, 10, 10, 0.94);
+                backdrop-filter: blur(16px);
+                border-bottom: 1px solid var(--border);
+                padding: 10px 0;
+                margin-bottom: 24px;
+            }
+            [data-theme="light"] .mobile-project-bar {
+                background: rgba(245, 240, 232, 0.94);
+                border-bottom-color: rgba(138, 90, 0, 0.15);
+            }
+            .mob-bar-inner {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                width: 100%;
+            }
+            .mob-bar-label {
+                font-family: var(--font-mono);
+                font-size: 0.65rem;
+                color: var(--muted);
+                letter-spacing: 1.5px;
+                text-transform: uppercase;
+            }
+            .mob-bar-pills {
+                display: flex;
+                gap: 6px;
+            }
+            .mob-pill {
+                font-family: var(--font-mono);
+                font-size: 0.65rem;
+                padding: 4px 10px;
+                border: 1px solid var(--border);
+                background: rgba(255, 255, 255, 0.04);
+                color: var(--muted);
+                border-radius: 3px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                letter-spacing: 0.5px;
+                white-space: nowrap;
+            }
+            .mob-pill.active {
+                color: #000 !important;
+                background: var(--accent) !important;
+                border-color: var(--accent) !important;
+                font-weight: 600;
+                box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.35);
+            }
+            [data-theme="light"] .mob-pill.active {
+                color: #f5f0e8 !important;
+                background: var(--accent) !important;
+                border-color: var(--accent) !important;
+            }
+
+            /* Dedicated, beautifully proportioned mobile visualization module inside each card */
+            .project-mobile-viz {
+                display: flex;
+                flex-direction: column;
+                background: rgba(0, 0, 0, 0.6);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                padding: 16px;
+                margin: 16px 0;
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 24px rgba(0, 0, 0, 0.35);
+            }
+            [data-theme="light"] .project-mobile-viz {
+                background: rgba(237, 229, 208, 0.75);
+                border-color: rgba(138, 90, 0, 0.2);
+            }
+            .mob-viz-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding-bottom: 10px;
+                border-bottom: 1px solid var(--border);
+                margin-bottom: 12px;
+            }
+            .mob-viz-title {
+                font-family: var(--font-mono);
+                font-size: 0.65rem;
+                color: var(--accent);
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
+                font-weight: 500;
+            }
+            .mob-stats-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-top: 1px solid var(--border);
+                padding-top: 10px;
+                margin-top: 10px;
+            }
+            .mob-stat-lbl {
+                font-family: var(--font-mono);
+                font-size: 0.6rem;
+                color: var(--muted);
+                letter-spacing: 1px;
+                display: block;
+            }
+            .mob-stat-val {
+                font-family: var(--font-display);
+                font-size: 1.3rem;
+                color: var(--accent);
+                letter-spacing: 0.5px;
+                line-height: 1.1;
+                margin-top: 2px;
+            }
+            .mob-stat-sub {
+                font-family: var(--font-mono);
+                font-size: 0.55rem;
+                color: var(--muted);
+                letter-spacing: 0.5px;
+                display: block;
+                margin-top: 2px;
+            }
+            .mob-kpi-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+                margin-top: 12px;
+                padding-top: 10px;
+                border-top: 1px solid var(--border);
+            }
+            .mob-kpi-item {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .mob-kpi-top {
+                display: flex;
+                justify-content: space-between;
+                font-family: var(--font-mono);
+                font-size: 0.62rem;
+                color: var(--muted);
+                letter-spacing: 0.5px;
+            }
+            .mob-kpi-top span:last-child {
+                color: var(--accent);
+                font-weight: 500;
+            }
+            [data-theme="light"] .project-mobile-viz svg text {
+                fill: var(--ink);
+            }
+            [data-theme="light"] .project-mobile-viz svg text[fill="var(--accent)"] {
+                fill: var(--accent) !important;
+            }
+            [data-theme="light"] .project-mobile-viz svg path[stroke="rgba(255,255,255,0.06)"],
+            [data-theme="light"] .project-mobile-viz svg path[stroke="rgba(255,255,255,0.05)"] {
+                stroke: rgba(138, 90, 0, 0.15) !important;
+            }
+            [data-theme="light"] .project-mobile-viz .gauge-value {
+                fill: var(--ink) !important;
+            }
+
+            .projects-list {
+                gap: 28px;
+                padding-bottom: 40px !important;
+            }
+
+            .project-row {
+                min-height: auto;
+                padding: 26px 22px;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                margin-bottom: 0;
+            }
+
+            .project-row.active-scroll {
+                border-color: rgba(var(--accent-rgb), 0.5);
+                border-left: 4px solid var(--accent);
+                padding-left: 22px;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            }
+
+            .projects-end-indicator {
+                display: none;
+            }
             .section-header { margin-bottom: 40px; }
         }
 
         @media (max-width: 900px) {
             section { padding: 80px 30px; }
             nav { padding: 20px 30px; }
+            nav.nav-scrolled { padding: 14px 30px; }
             #about { display: flex; flex-direction: column; gap: 0; }
             .about-left { display: contents; }
             .section-header { order: -1; margin-bottom: 30px; }
@@ -1312,10 +1702,49 @@
         @media (max-width: 600px) {
             section { padding: 60px 20px; }
             nav { padding: 18px 20px; font-size: 0.65rem; }
+            nav.nav-scrolled { padding: 12px 20px; }
             .nav-right { gap: 10px; }
             
             .section-header { margin-bottom: 40px; }
             .hero-tagline-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+            
+            .mobile-project-bar {
+                margin: 0 -20px 20px -20px;
+                padding: 8px 16px;
+            }
+            .mob-pill {
+                font-size: 0.58rem;
+                padding: 3px 8px;
+            }
+            .projects-list {
+                gap: 20px;
+                padding-bottom: 40px !important;
+            }
+            .project-row {
+                min-height: auto;
+                padding: 20px 16px;
+                margin-bottom: 0;
+            }
+            .project-row.active-scroll {
+                padding-left: 16px;
+            }
+            .project-name {
+                font-size: clamp(1.6rem, 7vw, 2.2rem);
+            }
+            .project-summary-text {
+                font-size: 0.76rem;
+                margin-bottom: 12px;
+            }
+            .project-impact-pill {
+                font-size: 0.72rem;
+                padding: 4px 9px;
+                margin-bottom: 10px;
+            }
+            .project-mobile-viz {
+                padding: 12px;
+                margin: 12px 0;
+            }
+
             
             .exp-header {
                 grid-template-columns: 1fr auto;
@@ -1341,12 +1770,6 @@
             .stat-num { font-size: 50px; }
             .bio-text { font-size: 1.15rem; }
         }
-
-        /* --- Global Animation Smoothness --- */
-        * { transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important; }
-        .hero-headline span { will-change: transform; }
-        .reveal { will-change: transform, opacity; }
-        .dashboard-pane { will-change: opacity, transform; }
     </style>
 </head>
 <body>
@@ -1360,7 +1783,7 @@
         <div id="loader-line"></div>
     </div>
 
-    <nav>
+    <nav id="navbar">
         <div class="nav-left">AMOL SINGHAL</div>
         <div class="nav-right">
             <span>[ DATA ANALYST — OPEN TO WORK ]</span>
@@ -1372,11 +1795,11 @@
     <!-- HERO -->
     <section id="hero">
         <canvas id="canvas-grid"></canvas>
-        <div class="hero-top">
+        <div class="hero-top reveal-item">
             <div>[01]</div>
             <div>[GZB · INDIA]</div>
         </div>
-        <div class="hero-main">
+        <div class="hero-main" id="hero-main">
             <h1 class="hero-headline">
                 <div><span>TURNING</span></div>
                 <div><span>RAW <span class="italic-accent">DATA</span></span></div>
@@ -1384,17 +1807,17 @@
                 <div><span><span class="underlined">DECISIONS</span>.</span></div>
             </h1>
         </div>
-        <div class="hero-bottom">
+        <div class="hero-bottom reveal-item">
             <div class="hero-divider"></div>
             <div class="hero-tagline-row">
                 <div style="font-family:var(--font-mono);font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;">Power BI · SQL · Python · Excel</div>
-                <div style="font-family:var(--font-mono);font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;">[SCROLL ↓]</div>
+                <div id="scroll-down-btn" style="font-family:var(--font-mono);font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;cursor:pointer;">[SCROLL ↓]</div>
             </div>
         </div>
     </section>
 
     <div class="marquee-divider"></div>
-    <div class="marquee-container accent-bg tilt-left reverse">
+    <div class="marquee-container accent-bg tilt-left reverse" data-base-tilt="rotate(-2.5deg) scale(1.05)">
         <div class="marquee-content" style="color: #000;"><span>POWER BI &nbsp;✦&nbsp; SQL &nbsp;✦&nbsp; PYTHON &nbsp;✦&nbsp; DAX &nbsp;✦&nbsp; EXCEL &nbsp;✦&nbsp; DATA MODELING &nbsp;✦&nbsp; AVAILABLE FOR HIRE &nbsp;✦&nbsp; OPEN TO WORK &nbsp;✦&nbsp; DATA ANALYST &nbsp;✦&nbsp; POWER BI &nbsp;✦&nbsp; SQL &nbsp;✦&nbsp; PYTHON &nbsp;✦&nbsp; DAX &nbsp;✦&nbsp; EXCEL &nbsp;✦&nbsp; DATA MODELING &nbsp;✦&nbsp; AVAILABLE FOR HIRE &nbsp;✦&nbsp; OPEN TO WORK &nbsp;✦&nbsp; DATA ANALYST &nbsp;✦&nbsp; POWER BI &nbsp;✦&nbsp; SQL &nbsp;✦&nbsp; PYTHON &nbsp;✦&nbsp; DAX &nbsp;✦&nbsp; EXCEL &nbsp;✦&nbsp; DATA MODELING &nbsp;✦&nbsp; AVAILABLE FOR HIRE &nbsp;✦&nbsp; OPEN TO WORK &nbsp;✦&nbsp; DATA ANALYST &nbsp;✦&nbsp; </span><span>POWER BI &nbsp;✦&nbsp; SQL &nbsp;✦&nbsp; PYTHON &nbsp;✦&nbsp; DAX &nbsp;✦&nbsp; EXCEL &nbsp;✦&nbsp; DATA MODELING &nbsp;✦&nbsp; AVAILABLE FOR HIRE &nbsp;✦&nbsp; OPEN TO WORK &nbsp;✦&nbsp; DATA ANALYST &nbsp;✦&nbsp; POWER BI &nbsp;✦&nbsp; SQL &nbsp;✦&nbsp; PYTHON &nbsp;✦&nbsp; DAX &nbsp;✦&nbsp; EXCEL &nbsp;✦&nbsp; DATA MODELING &nbsp;✦&nbsp; AVAILABLE FOR HIRE &nbsp;✦&nbsp; OPEN TO WORK &nbsp;✦&nbsp; DATA ANALYST &nbsp;✦&nbsp; POWER BI &nbsp;✦&nbsp; SQL &nbsp;✦&nbsp; PYTHON &nbsp;✦&nbsp; DAX &nbsp;✦&nbsp; EXCEL &nbsp;✦&nbsp; DATA MODELING &nbsp;✦&nbsp; AVAILABLE FOR HIRE &nbsp;✦&nbsp; OPEN TO WORK &nbsp;✦&nbsp; DATA ANALYST &nbsp;✦&nbsp; </span></div>
     </div>
     <div class="marquee-divider"></div>
@@ -1402,11 +1825,11 @@
     <!-- ABOUT -->
     <section id="about">
         <div class="about-left">
-            <div class="section-header">
+            <div class="section-header reveal-item">
                 <span class="section-num">[02]</span>
                 <span class="section-title">ABOUT</span>
             </div>
-            <div class="stats-row">
+            <div class="stats-row reveal-stagger">
                 <div class="stats-col">
                     <div class="stat-block">
                         <span class="stat-num" data-target="3">0</span>
@@ -1433,7 +1856,7 @@
                 </div>
             </div>
         </div>
-        <div class="about-right">
+        <div class="about-right reveal-item">
             <div class="profile-tag-header" style="font-family: var(--font-mono); font-size: 1.4rem; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); margin-bottom: 10px; font-weight: 500;">
                 [EXE_PROFILE]
             </div>
@@ -1452,9 +1875,8 @@
                 <div class="fact-item"><span class="arrow">→</span><span>Based in Ghaziabad · Open to remote and hybrid roles</span></div>
             </div>
 
-            <div class="pipeline-wrap" style="margin: 24px auto 0 auto; max-width: 390px; display: flex; justify-content: center; align-items: center;">
+            <div class="pipeline-wrap reveal-item" style="margin: 24px auto 0 auto; max-width: 390px; display: flex; justify-content: center; align-items: center;">
                 <div class="pipeline-shimmer"></div>
-                <!-- SVG content remains identical, just repositioned -->
                 <svg viewBox="0 0 400 300" style="position:relative; width:100%; height:100%; padding:4px;" overflow="visible">
                     <defs>
                         <filter id="neon-glow-about" x="-50%" y="-50%" width="200%" height="200%">
@@ -1554,7 +1976,7 @@
     </section>
 
     <div class="marquee-divider"></div>
-    <div class="marquee-container tilt-right">
+    <div class="marquee-container tilt-right" data-base-tilt="rotate(2deg) scale(1.05)">
         <div class="marquee-content"><span>CORE STACK &nbsp;✦&nbsp; DATA LITERACY &nbsp;✦&nbsp; PROBLEM SOLVING &nbsp;✦&nbsp; CRITICAL THINKING &nbsp;✦&nbsp; CORE STACK &nbsp;✦&nbsp; DATA LITERACY &nbsp;✦&nbsp; PROBLEM SOLVING &nbsp;✦&nbsp; CRITICAL THINKING &nbsp;✦&nbsp; CORE STACK &nbsp;✦&nbsp; DATA LITERACY &nbsp;✦&nbsp; PROBLEM SOLVING &nbsp;✦&nbsp; CRITICAL THINKING &nbsp;✦&nbsp; </span><span>CORE STACK &nbsp;✦&nbsp; DATA LITERACY &nbsp;✦&nbsp; PROBLEM SOLVING &nbsp;✦&nbsp; CRITICAL THINKING &nbsp;✦&nbsp; CORE STACK &nbsp;✦&nbsp; DATA LITERACY &nbsp;✦&nbsp; PROBLEM SOLVING &nbsp;✦&nbsp; CRITICAL THINKING &nbsp;✦&nbsp; CORE STACK &nbsp;✦&nbsp; DATA LITERACY &nbsp;✦&nbsp; PROBLEM SOLVING &nbsp;✦&nbsp; CRITICAL THINKING &nbsp;✦&nbsp; </span></div>
     </div>
     <div class="marquee-divider"></div>
@@ -1563,7 +1985,7 @@
     <section id="skills">
         <div class="skills-visual-host" id="hex-field"></div>
         
-        <div class="section-header">
+        <div class="section-header reveal-item">
             <span class="section-num">[03]</span>
             <span class="section-title">SKILLS</span>
             <div class="encr-list">
@@ -1578,7 +2000,7 @@
             </div>
         </div>
         <div class="skills-grid">
-            <div class="skills-list-col">
+            <div class="skills-list-col reveal-stagger">
                 <div class="skill-row">
                     <div class="packet-host"></div>
                     <div class="skill-cat">MIS &amp; Reporting</div>
@@ -1619,237 +2041,255 @@
     </section>
 
     <div class="marquee-divider"></div>
-    <div class="marquee-container tilt-left">
+    <div class="marquee-container tilt-left" data-base-tilt="rotate(-2.5deg) scale(1.05)">
         <div class="marquee-content"><span>DATA STORYTELLING &nbsp;✦&nbsp; DATA CLEANING &nbsp;✦&nbsp; REPORTING &nbsp;✦&nbsp; KPI DASHBOARDS &nbsp;✦&nbsp; DATA VISUALIZATION &nbsp;✦&nbsp; STATISTICAL ANALYSIS &nbsp;✦&nbsp; DATA STORYTELLING &nbsp;✦&nbsp; DATA CLEANING &nbsp;✦&nbsp; REPORTING &nbsp;✦&nbsp; KPI DASHBOARDS &nbsp;✦&nbsp; DATA VISUALIZATION &nbsp;✦&nbsp; STATISTICAL ANALYSIS &nbsp;✦&nbsp; DATA STORYTELLING &nbsp;✦&nbsp; DATA CLEANING &nbsp;✦&nbsp; REPORTING &nbsp;✦&nbsp; KPI DASHBOARDS &nbsp;✦&nbsp; DATA VISUALIZATION &nbsp;✦&nbsp; STATISTICAL ANALYSIS &nbsp;✦&nbsp; </span><span>DATA STORYTELLING &nbsp;✦&nbsp; DATA CLEANING &nbsp;✦&nbsp; REPORTING &nbsp;✦&nbsp; KPI DASHBOARDS &nbsp;✦&nbsp; DATA VISUALIZATION &nbsp;✦&nbsp; STATISTICAL ANALYSIS &nbsp;✦&nbsp; DATA STORYTELLING &nbsp;✦&nbsp; DATA CLEANING &nbsp;✦&nbsp; REPORTING &nbsp;✦&nbsp; KPI DASHBOARDS &nbsp;✦&nbsp; DATA VISUALIZATION &nbsp;✦&nbsp; STATISTICAL ANALYSIS &nbsp;✦&nbsp; DATA STORYTELLING &nbsp;✦&nbsp; DATA CLEANING &nbsp;✦&nbsp; REPORTING &nbsp;✦&nbsp; KPI DASHBOARDS &nbsp;✦&nbsp; DATA VISUALIZATION &nbsp;✦&nbsp; STATISTICAL ANALYSIS &nbsp;✦&nbsp; </span></div>
     </div>
     <div class="marquee-divider"></div>
 
     <!-- EXPERIENCE -->
     <section id="experience">
-        <div class="section-header">
+        <div class="section-header reveal-item">
             <span class="section-num">[04]</span>
             <span class="section-title">EXPERIENCE</span>
         </div>
-        <div class="exp-row">
-            <div class="exp-header">
-                <div class="exp-id">01</div>
-                <div class="exp-company">NCRTC</div>
-                <div>
-                    <div class="exp-role">IT INTERN — DATA ANALYTICS</div>
-                    <div class="exp-date">SEP–NOV 2025 · GHAZIABAD</div>
+        <div class="reveal-stagger">
+            <div class="exp-row">
+                <div class="exp-header">
+                    <div class="exp-id">01</div>
+                    <div class="exp-company">NCRTC</div>
+                    <div>
+                        <div class="exp-role">IT INTERN — DATA ANALYTICS</div>
+                        <div class="exp-date">SEP–NOV 2025 · GHAZIABAD</div>
+                    </div>
+                </div>
+                <div class="exp-toggle-hint"></div>
+                <div class="exp-content">
+                    <ul class="exp-bullets">
+                        <li>Designed and deployed <strong>4 Power BI MIS dashboards</strong> using advanced DAX measures to track real-time operational KPIs across the PM-eBus Sewa national fleet program, giving ministry-level stakeholders continuous fleet visibility.</li>
+                        <li>Partnered directly with the <strong>Senior GM/IT</strong> to redesign MIS report layouts across all 4 dashboards, standardising KPI presentation and making cross-team reporting easier to read and act on.</li>
+                        <li>Automated manual MIS reporting workflows with <strong>Excel macros and Power Query</strong> and optimised the underlying SQL queries, cutting dashboard generation time by <strong>20-25%</strong> and reducing report refresh time by roughly <strong>25%</strong>.</li>
+                        <li>Presented dashboard findings and KPI trends in <strong>biweekly reviews</strong> with a 5-6 person IT leadership team, translating technical metrics into plain-language insights for non-technical stakeholders.</li>
+                        <li>Coordinated across <strong>3 stakeholder groups</strong> (IT, operations, and ministry liaisons) to gather requirements and validate KPI definitions before each of the 4 dashboard rollouts.</li>
+                    </ul>
+                    <div class="exp-quote">
+                        <strong>[VERIFIED] · NCRTC Internship Certificate · Sr. GM/IT · Sep–Nov 2025</strong>
+                        Work delivered under supervision of Sr. GM/IT, NCRTC.<br>
+                        Output deployed on national government infrastructure for PM-eBus Sewa fleet monitoring.
+                    </div>
+                    <div class="tech-tags">
+                        <span class="tag">Power BI</span>
+                        <span class="tag">DAX</span>
+                        <span class="tag">SQL</span>
+                        <span class="tag">Excel</span>
+                        <span class="tag">Power Query</span>
+                    </div>
                 </div>
             </div>
-            <div class="exp-toggle-hint"></div>
-            <div class="exp-content">
-                <ul class="exp-bullets">
-                    <li>Designed and deployed <strong>4 Power BI MIS dashboards</strong> using advanced DAX measures to track real-time operational KPIs across the PM-eBus Sewa national fleet program, giving ministry-level stakeholders continuous fleet visibility.</li>
-                    <li>Partnered directly with the <strong>Senior GM/IT</strong> to redesign MIS report layouts across all 4 dashboards, standardising KPI presentation and making cross-team reporting easier to read and act on.</li>
-                    <li>Automated manual MIS reporting workflows with <strong>Excel macros and Power Query</strong> and optimised the underlying SQL queries, cutting dashboard generation time by <strong>20-25%</strong> and reducing report refresh time by roughly <strong>25%</strong>.</li>
-                    <li>Presented dashboard findings and KPI trends in <strong>biweekly reviews</strong> with a 5-6 person IT leadership team, translating technical metrics into plain-language insights for non-technical stakeholders.</li>
-                    <li>Coordinated across <strong>3 stakeholder groups</strong> (IT, operations, and ministry liaisons) to gather requirements and validate KPI definitions before each of the 4 dashboard rollouts.</li>
-                </ul>
-                <div class="exp-quote">
-                    <strong>[VERIFIED] · NCRTC Internship Certificate · Sr. GM/IT · Sep–Nov 2025</strong>
-                    Work delivered under supervision of Sr. GM/IT, NCRTC.<br>
-                    Output deployed on national government infrastructure for PM-eBus Sewa fleet monitoring.
+            <div class="exp-row">
+                <div class="exp-header">
+                    <div class="exp-id">02</div>
+                    <div class="exp-company">INTERNSHIP STUDIO</div>
+                    <div>
+                        <div class="exp-role">WEB DESIGN INTERN</div>
+                        <div class="exp-date">SEP–OCT 2024 · REMOTE</div>
+                    </div>
                 </div>
-                <div class="tech-tags">
-                    <span class="tag">Power BI</span>
-                    <span class="tag">DAX</span>
-                    <span class="tag">SQL</span>
-                    <span class="tag">Excel</span>
-                    <span class="tag">Power Query</span>
-                </div>
-            </div>
-        </div>
-        <div class="exp-row">
-            <div class="exp-header">
-                <div class="exp-id">02</div>
-                <div class="exp-company">INTERNSHIP STUDIO</div>
-                <div>
-                    <div class="exp-role">WEB DESIGN INTERN</div>
-                    <div class="exp-date">SEP–OCT 2024 · REMOTE</div>
+                <div class="exp-toggle-hint"></div>
+                <div class="exp-content">
+                    <ul class="exp-bullets">
+                        <li>Applied Excel pivot table analysis to user flow data, identifying drop-off points that directly shaped layout and checkout redesign decisions.</li>
+                        <li>Developed a fully functional eCommerce website with responsive product pages and checkout flow, built from scratch.</li>
+                        <li>Translated data insights into wireframes and high-fidelity mockups, ensuring every design decision was grounded in user behaviour analysis.</li>
+                    </ul>
+                    <div class="tech-tags">
+                        <span class="tag">HTML / CSS</span>
+                        <span class="tag">Figma</span>
+                        <span class="tag">Photoshop</span>
+                        <span class="tag">Excel</span>
+                        <span class="tag">Responsive Design</span>
+                    </div>
                 </div>
             </div>
-            <div class="exp-toggle-hint"></div>
-            <div class="exp-content">
-                <ul class="exp-bullets">
-                    <li>Applied Excel pivot table analysis to user flow data, identifying drop-off points that directly shaped layout and checkout redesign decisions.</li>
-                    <li>Developed a fully functional eCommerce website with responsive product pages and checkout flow, built from scratch.</li>
-                    <li>Translated data insights into wireframes and high-fidelity mockups, ensuring every design decision was grounded in user behaviour analysis.</li>
-                </ul>
-                <div class="tech-tags">
-                    <span class="tag">HTML / CSS</span>
-                    <span class="tag">Figma</span>
-                    <span class="tag">Photoshop</span>
-                    <span class="tag">Excel</span>
-                    <span class="tag">Responsive Design</span>
+            <div class="exp-row">
+                <div class="exp-header">
+                    <div class="exp-id">03</div>
+                    <div class="exp-company">ZIDIO</div>
+                    <div>
+                        <div class="exp-role">UI/UX INTERN</div>
+                        <div class="exp-date">APR–JUL 2024 · REMOTE</div>
+                    </div>
                 </div>
-            </div>
-        </div>
-        <div class="exp-row">
-            <div class="exp-header">
-                <div class="exp-id">03</div>
-                <div class="exp-company">ZIDIO</div>
-                <div>
-                    <div class="exp-role">UI/UX INTERN</div>
-                    <div class="exp-date">APR–JUL 2024 · REMOTE</div>
-                </div>
-            </div>
-            <div class="exp-toggle-hint"></div>
-            <div class="exp-content">
-                <ul class="exp-bullets">
-                    <li>Designed a data-driven weather analysis app in Figma, improving user comprehension of forecast data by 40% during usability testing.</li>
-                    <li>
-Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total design revision cycles across the project lifecycle.</li>
-                    <li>Built a reusable component library following WCAG accessibility standards, cutting developer handoff time and ensuring consistent interfaces.</li>
-                </ul>
-                <div class="tech-tags">
-                    <span class="tag">Figma</span>
-                    <span class="tag">Miro</span>
-                    <span class="tag">Prototyping</span>
-                    <span class="tag">Accessibility</span>
-                    <span class="tag">Agile</span>
+                <div class="exp-toggle-hint"></div>
+                <div class="exp-content">
+                    <ul class="exp-bullets">
+                        <li>Designed a data-driven weather analysis app in Figma, improving user comprehension of forecast data by 40% during usability testing.</li>
+                        <li>Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total design revision cycles across the project lifecycle.</li>
+                        <li>Built a reusable component library following WCAG accessibility standards, cutting developer handoff time and ensuring consistent interfaces.</li>
+                    </ul>
+                    <div class="tech-tags">
+                        <span class="tag">Figma</span>
+                        <span class="tag">Miro</span>
+                        <span class="tag">Prototyping</span>
+                        <span class="tag">Accessibility</span>
+                        <span class="tag">Agile</span>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
     
     <div class="marquee-divider"></div>
-    <div class="marquee-container tilt-right">
+    <div class="marquee-container tilt-right" data-base-tilt="rotate(2deg) scale(1.05)">
         <div class="marquee-content"><span>ACTIONABLE INSIGHTS &nbsp;✦&nbsp; ANALYTICS PIPELINES &nbsp;✦&nbsp; END-TO-END SOLUTIONS &nbsp;✦&nbsp; DATA GOVERNANCE &nbsp;✦&nbsp; ACTIONABLE INSIGHTS &nbsp;✦&nbsp; ANALYTICS PIPELINES &nbsp;✦&nbsp; END-TO-END SOLUTIONS &nbsp;✦&nbsp; DATA GOVERNANCE &nbsp;✦&nbsp; ACTIONABLE INSIGHTS &nbsp;✦&nbsp; ANALYTICS PIPELINES &nbsp;✦&nbsp; END-TO-END SOLUTIONS &nbsp;✦&nbsp; DATA GOVERNANCE &nbsp;✦&nbsp; </span><span>ACTIONABLE INSIGHTS &nbsp;✦&nbsp; ANALYTICS PIPELINES &nbsp;✦&nbsp; END-TO-END SOLUTIONS &nbsp;✦&nbsp; DATA GOVERNANCE &nbsp;✦&nbsp; ACTIONABLE INSIGHTS &nbsp;✦&nbsp; ANALYTICS PIPELINES &nbsp;✦&nbsp; END-TO-END SOLUTIONS &nbsp;✦&nbsp; DATA GOVERNANCE &nbsp;✦&nbsp; ACTIONABLE INSIGHTS &nbsp;✦&nbsp; ANALYTICS PIPELINES &nbsp;✦&nbsp; END-TO-END SOLUTIONS &nbsp;✦&nbsp; DATA GOVERNANCE &nbsp;✦&nbsp; </span></div>
     </div>
     <div class="marquee-divider"></div>
 
     <!-- PROJECTS -->
     <section id="projects">
-        <div class="section-header">
+        <div class="section-header reveal-item">
             <span class="section-num">[05]</span>
             <span class="section-title">SELECTED WORK</span>
         </div>
+        <div class="mobile-project-bar">
+            <div class="mob-bar-inner">
+                <span class="mob-bar-label">[ SELECTED WORK ]</span>
+                <div class="mob-bar-pills">
+                    <button class="mob-pill active" data-index="0" aria-label="Jump to PM-eBus">01 EBUS</button>
+                    <button class="mob-pill" data-index="1" aria-label="Jump to India AQI">02 AQI</button>
+                    <button class="mob-pill" data-index="2" aria-label="Jump to FundScope">03 FUNDS</button>
+                </div>
+            </div>
+        </div>
         <div class="projects-wrapper">
-            <div class="projects-list">
-                <div class="project-row" data-bg="https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=1000">
+            <div class="projects-list reveal-stagger">
+                <div class="project-row" data-index="0" data-bg="https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=1000">
                     <div class="project-codestream"></div>
-                    <div class="project-main">
-                        <div class="project-name">PM-EBUS KPI DASHBOARD</div>
-                        <div class="project-year">2025</div>
+                    <div class="project-top-row">
+                        <span class="project-num-tag">[ PROJECT 01 / 03 ]</span>
+                        <div class="project-top-right">
+                            <span class="project-year">2025</span>
+                            <a href="https://pm-ebus-sewa.mohua.gov.in/" target="_blank" class="view-link" onclick="event.stopPropagation()">[ VIEW ↗ ]</a>
+                        </div>
                     </div>
-                    <div class="project-meta">
-                        <div class="project-tags">NCRTC · Power BI · DAX · SQL</div>
-                        <a href="https://pm-ebus-sewa.mohua.gov.in/" target="_blank" class="view-link" onclick="event.stopPropagation()">[ VIEW ↗ ]</a>
+                    <div class="project-main">
+                        <h3 class="project-name">PM-EBUS KPI DASHBOARD</h3>
+                    </div>
+                    <div class="project-impact-pill">
+                        <span class="pill-icon">✦</span>
+                        <span>Cut reporting time by 20–25% across a national fleet program</span>
+                    </div>
+                    <div class="project-mobile-viz" id="mob-viz-0"></div>
+                    <p class="project-summary-text">
+                        Automated MIS reporting pipeline across NCRTC's national PM-eBus Sewa fleet operations with custom DAX measures and Power Query ETL, delivering biweekly intelligence to ministry stakeholders.
+                    </p>
+                    <div class="project-tags-row">
+                        <span class="tag">Power BI</span>
+                        <span class="tag">DAX</span>
+                        <span class="tag">SQL</span>
+                        <span class="tag">Power Query</span>
+                        <span class="tag">Excel Macros</span>
                     </div>
                     <div class="project-toggle-hint"></div>
                     <div class="project-desc">
                         <div class="project-desc-inner">
-                            <div class="project-desc-left">
-                                <div class="project-impact-label">Impact</div>
-                                <div class="project-impact-line">Cut reporting time by 20–25% across a national fleet program</div>
-                                <div class="project-story">
-                                    <span><span class="story-label">BEFORE</span>Manual MIS reports took hours per cycle across NCRTC's PM-eBus Sewa fleet operations</span>
-                                    <span><span class="story-label">PROBLEM</span>No real-time KPI visibility for ministry-level stakeholders managing a national bus fleet</span>
-                                    <span><span class="story-label">FIX</span>Designed and deployed 4 Power BI MIS dashboards with advanced DAX, automated with Excel macros, Power Query, and optimised SQL</span>
-                                    <span><span class="story-label">RESULT</span>20–25% reduction in dashboard generation time and ~25% faster report refresh, presented biweekly to a 5-6 person IT leadership team</span>
-                                </div>
-                            </div>
-                            <div class="project-desc-right">
-                                <div class="project-impact-label">Stack</div>
-                                <div class="project-desc-tags">
-                                    <span class="tag">Power BI</span>
-                                    <span class="tag">DAX</span>
-                                    <span class="tag">SQL</span>
-                                    <span class="tag">Excel</span>
-                                    <span class="tag">Power Query</span>
-                                    <span class="tag">Excel Macros</span>
-                                    <span class="tag">Stakeholder Management</span>
-                                </div>
+                            <div class="project-story">
+                                <span><span class="story-label">BEFORE</span>Manual MIS reports took hours per cycle across NCRTC's PM-eBus Sewa fleet operations</span>
+                                <span><span class="story-label">PROBLEM</span>No real-time KPI visibility for ministry-level stakeholders managing a national bus fleet</span>
+                                <span><span class="story-label">FIX</span>Designed and deployed 4 Power BI MIS dashboards with advanced DAX, automated with Excel macros, Power Query, and optimised SQL</span>
+                                <span><span class="story-label">RESULT</span>20–25% reduction in dashboard generation time and ~25% faster report refresh, presented biweekly to a 5-6 person IT leadership team</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="project-row" data-bg="https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?auto=format&fit=crop&q=80&w=1000">
+                <div class="project-row" data-index="1" data-bg="https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?auto=format&fit=crop&q=80&w=1000">
                     <div class="project-codestream"></div>
-                    <div class="project-main">
-                        <div class="project-name">INDIA AQI DASHBOARD</div>
-                        <div class="project-year">2026</div>
+                    <div class="project-top-row">
+                        <span class="project-num-tag">[ PROJECT 02 / 03 ]</span>
+                        <div class="project-top-right">
+                            <span class="project-year">2026</span>
+                            <a href="https://amol257.github.io/aqi-dashboard/" target="_blank" class="view-link" onclick="event.stopPropagation()">[ VIEW ↗ ]</a>
+                        </div>
                     </div>
-                    <div class="project-meta">
-                        <div class="project-tags">React 19 · TypeScript · Python · Gemini AI · Leaflet</div>
-                        <a href="https://amol257.github.io/aqi-dashboard/" target="_blank" class="view-link" onclick="event.stopPropagation()">[ VIEW ↗ ]</a>
+                    <div class="project-main">
+                        <h3 class="project-name">INDIA AQI DASHBOARD</h3>
+                    </div>
+                    <div class="project-impact-pill">
+                        <span class="pill-icon">✦</span>
+                        <span>Real-time AQI intelligence across 511 stations in 28 states</span>
+                    </div>
+                    <div class="project-mobile-viz" id="mob-viz-1"></div>
+                    <p class="project-summary-text">
+                        Full-stack air quality intelligence platform tracking real-time pollution across 511 stations nationwide, featuring CPCB 6-tier medical health advisories and Gemini AI-generated contextual risk alerts.
+                    </p>
+                    <div class="project-tags-row">
+                        <span class="tag">React 19</span>
+                        <span class="tag">TypeScript</span>
+                        <span class="tag">Python</span>
+                        <span class="tag">Gemini AI</span>
+                        <span class="tag">Leaflet</span>
+                        <span class="tag">Tailwind CSS</span>
                     </div>
                     <div class="project-toggle-hint"></div>
                     <div class="project-desc">
                         <div class="project-desc-inner">
-                            <div class="project-desc-left">
-                                <div class="project-impact-label">Impact</div>
-                                <div class="project-impact-line">Real-time AQI intelligence across 511 stations in 28 states</div>
-                                <div class="project-story">
-                                    <span><span class="story-label">BEFORE</span>Air quality data across India was fragmented, with no unified real-time health risk view</span>
-                                    <span><span class="story-label">PROBLEM</span>Raw pollution readings gave non-technical users no clear sense of health risk</span>
-                                    <span><span class="story-label">FIX</span>Built a CPCB 6-tier medical alert scale and integrated Gemini AI to generate hourly, contextual health-risk insights from raw sensor data</span>
-                                    <span><span class="story-label">RESULT</span>Live national AQI tracker with daily, weekly, monthly views, deployed and debugged in production on GitHub Pages</span>
-                                </div>
-                            </div>
-                            <div class="project-desc-right">
-                                <div class="project-impact-label">Stack</div>
-                                <div class="project-desc-tags">
-                                    <span class="tag">React 19</span>
-                                    <span class="tag">TypeScript</span>
-                                    <span class="tag">Python</span>
-                                    <span class="tag">Gemini AI</span>
-                                    <span class="tag">Leaflet</span>
-                                    <span class="tag">Recharts</span>
-                                    <span class="tag">Tailwind CSS</span>
-                                    <span class="tag">Vite</span>
-                                    <span class="tag">REST API</span>
-                                </div>
+                            <div class="project-story">
+                                <span><span class="story-label">BEFORE</span>Air quality data across India was fragmented, with no unified real-time health risk view</span>
+                                <span><span class="story-label">PROBLEM</span>Raw pollution readings gave non-technical users no clear sense of health risk</span>
+                                <span><span class="story-label">FIX</span>Built a CPCB 6-tier medical alert scale and integrated Gemini AI to generate hourly, contextual health-risk insights from raw sensor data</span>
+                                <span><span class="story-label">RESULT</span>Live national AQI tracker with daily, weekly, monthly views, deployed and debugged in production on GitHub Pages</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="project-row" data-bg="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=1000">
+                <div class="project-row" data-index="2" data-bg="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=1000">
                     <div class="project-codestream"></div>
-                    <div class="project-main">
-                        <div class="project-name">FUNDSCOPE</div>
-                        <div class="project-year">2026</div>
+                    <div class="project-top-row">
+                        <span class="project-num-tag">[ PROJECT 03 / 03 ]</span>
+                        <div class="project-top-right">
+                            <span class="project-year">2026</span>
+                            <a href="https://amol257.github.io/fundscope/" target="_blank" class="view-link" onclick="event.stopPropagation()">[ VIEW ↗ ]</a>
+                        </div>
                     </div>
-                    <div class="project-meta">
-                        <div class="project-tags">Next.js 15 · Python · SQLite · AMFI API · yfinance</div>
-                        <a href="https://amol257.github.io/fundscope/" target="_blank" class="view-link" onclick="event.stopPropagation()">[ VIEW ↗ ]</a>
+                    <div class="project-main">
+                        <h3 class="project-name">FUNDSCOPE</h3>
+                    </div>
+                    <div class="project-impact-pill">
+                        <span class="pill-icon">✦</span>
+                        <span>Ranks 32 Indian mutual funds on a single, defensible composite score</span>
+                    </div>
+                    <div class="project-mobile-viz" id="mob-viz-2"></div>
+                    <p class="project-summary-text">
+                        Quantitative mutual fund evaluation platform normalizing CAGR, Sharpe Ratio, and Jensen's Alpha across 32 funds via AMFI and yfinance APIs, paired with FundBot AI for natural-language portfolio analysis.
+                    </p>
+                    <div class="project-tags-row">
+                        <span class="tag">Next.js 15</span>
+                        <span class="tag">Python</span>
+                        <span class="tag">SQLite</span>
+                        <span class="tag">AMFI API</span>
+                        <span class="tag">yfinance</span>
+                        <span class="tag">FundBot AI</span>
                     </div>
                     <div class="project-toggle-hint"></div>
                     <div class="project-desc">
                         <div class="project-desc-inner">
-                            <div class="project-desc-left">
-                                <div class="project-impact-label">Impact</div>
-                                <div class="project-impact-line">Ranks 32 Indian mutual funds on a single, defensible composite score</div>
-                                <div class="project-story">
-                                    <span><span class="story-label">BEFORE</span>Comparing mutual funds meant juggling scattered NAV histories and inconsistent risk metrics with no single source of truth</span>
-                                    <span><span class="story-label">PROBLEM</span>Returns alone don't capture risk, and raw CAGR comparisons mislead investors across fund categories</span>
-                                    <span><span class="story-label">FIX</span>Built a full-stack platform (Next.js 15 + Python/SQLite) pulling live NAV data from the AMFI API and benchmark histories from yfinance, scoring funds on CAGR, Sharpe, and Alpha</span>
-                                    <span><span class="story-label">RESULT</span>32 funds across 5 categories ranked with a 3D-visualized, decision-ready interface, plus FundBot, a grounded AI assistant for natural-language fund queries</span>
-                                </div>
-                            </div>
-                            <div class="project-desc-right">
-                                <div class="project-impact-label">Stack</div>
-                                <div class="project-desc-tags">
-                                    <span class="tag">Next.js 15</span>
-                                    <span class="tag">Python</span>
-                                    <span class="tag">SQLite</span>
-                                    <span class="tag">AMFI API</span>
-                                    <span class="tag">yfinance</span>
-                                    <span class="tag">Statistical Analysis</span>
-                                    <span class="tag">3D Visualization</span>
-                                    <span class="tag">FundBot AI</span>
-                                </div>
+                            <div class="project-story">
+                                <span><span class="story-label">BEFORE</span>Comparing mutual funds meant juggling scattered NAV histories and inconsistent risk metrics with no single source of truth</span>
+                                <span><span class="story-label">PROBLEM</span>Returns alone don't capture risk, and raw CAGR comparisons mislead investors across fund categories</span>
+                                <span><span class="story-label">FIX</span>Built a full-stack platform (Next.js 15 + Python/SQLite) pulling live NAV data from the AMFI API and benchmark histories from yfinance, scoring funds on CAGR, Sharpe, and Alpha</span>
+                                <span><span class="story-label">RESULT</span>32 funds across 5 categories ranked with a 3D-visualized, decision-ready interface, plus FundBot, a grounded AI assistant for natural-language fund queries</span>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="projects-end-indicator">
+                    <div class="end-line"></div>
+                    <div class="end-label">[ END OF SELECTED ARCHIVE — 03 / 03 ]</div>
                 </div>
 
             </div>
 
-            <div class="dashboard-pane">
+            <div class="dashboard-pane reveal-item">
                 <div class="dashboard-header">
                     <div class="win-dots">
                         <div class="dot-w dot-r"></div>
@@ -1857,30 +2297,27 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                         <div class="dot-w dot-g"></div>
                     </div>
                     <div class="dashboard-title">Project Analyzer v1.0</div>
-                    <div class="status-badge"><span class="status-dot"></span> LIVE</div>
+                    <div class="mobile-project-tabs">
+                        <button class="mobile-proj-pill active" data-index="0" aria-label="View Project 01 PM-eBus">01 EBUS</button>
+                        <button class="mobile-proj-pill" data-index="1" aria-label="View Project 02 AQI">02 AQI</button>
+                        <button class="mobile-proj-pill" data-index="2" aria-label="View Project 03 FundScope">03 FUNDS</button>
+                    </div>
+                    <div class="dashboard-status status-badge"><span class="status-dot"></span> LIVE</div>
                 </div>
                 
                 <div class="dashboard-content" id="dashboard-content">
                     <div class="db-main-grid">
-                        <!-- Left Column: Viz Area -->
                         <div class="map-panel">
                             <div class="panel-header">
                                 <div class="panel-dot"></div>
                                 <span class="panel-label" id="db-panel-label">Distribution Map</span>
                             </div>
-                            <div class="map-area" id="db-main-viz">
-                                <!-- Content injected here -->
-                            </div>
-                            <div class="map-overlay-stats" id="db-map-stats">
-                                <!-- Stats injected here -->
-                            </div>
+                            <div class="map-area" id="db-main-viz"></div>
+                            <div class="map-overlay-stats" id="db-map-stats"></div>
                         </div>
 
-                        <!-- Right Column: KPIs & Table -->
                         <div class="kpi-column">
-                            <div id="db-kpi-grid">
-                                <!-- KPI mini-cards injected here -->
-                            </div>
+                            <div id="db-kpi-grid"></div>
                             <div class="table-card">
                                 <div class="panel-header" style="padding: 8px 12px 0;">
                                     <div class="panel-dot"></div>
@@ -1891,9 +2328,7 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                                     <div class="th-cell" id="db-th-2">Col 2</div>
                                     <div class="th-cell" style="text-align:right;" id="db-th-3">Metric</div>
                                 </div>
-                                <div class="table-body" id="db-table-body">
-                                    <!-- Table rows injected here -->
-                                </div>
+                                <div class="table-body" id="db-table-body" data-lenis-prevent></div>
                             </div>
                         </div>
                     </div>
@@ -1910,14 +2345,14 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
     </section>
 
     <div class="marquee-divider"></div>
-    <div class="marquee-container tilt-left">
+    <div class="marquee-container tilt-left" data-base-tilt="rotate(-2.5deg) scale(1.05)">
         <div class="marquee-content"><span>DATA ARCHITECTURE &nbsp;✦&nbsp; CLOUD ANALYTICS &nbsp;✦&nbsp; NEURAL NETS &nbsp;✦&nbsp; BIG DATA &nbsp;✦&nbsp; AUTOMATION &nbsp;✦&nbsp; DATA ARCHITECTURE &nbsp;✦&nbsp; CLOUD ANALYTICS &nbsp;✦&nbsp; NEURAL NETS &nbsp;✦&nbsp; BIG DATA &nbsp;✦&nbsp; AUTOMATION &nbsp;✦&nbsp; DATA ARCHITECTURE &nbsp;✦&nbsp; CLOUD ANALYTICS &nbsp;✦&nbsp; NEURAL NETS &nbsp;✦&nbsp; BIG DATA &nbsp;✦&nbsp; AUTOMATION &nbsp;✦&nbsp; </span><span>DATA ARCHITECTURE &nbsp;✦&nbsp; CLOUD ANALYTICS &nbsp;✦&nbsp; NEURAL NETS &nbsp;✦&nbsp; BIG DATA &nbsp;✦&nbsp; AUTOMATION &nbsp;✦&nbsp; DATA ARCHITECTURE &nbsp;✦&nbsp; CLOUD ANALYTICS &nbsp;✦&nbsp; NEURAL NETS &nbsp;✦&nbsp; BIG DATA &nbsp;✦&nbsp; AUTOMATION &nbsp;✦&nbsp; DATA ARCHITECTURE &nbsp;✦&nbsp; CLOUD ANALYTICS &nbsp;✦&nbsp; NEURAL NETS &nbsp;✦&nbsp; BIG DATA &nbsp;✦&nbsp; AUTOMATION &nbsp;✦&nbsp; </span></div>
     </div>
     <div class="marquee-divider"></div>
 
     <!-- EDUCATION -->
     <section id="education">
-        <div class="section-header">
+        <div class="section-header reveal-item">
             <span class="section-num">[06]</span>
             <span class="section-title">EDUCATION</span>
             <div class="signal-list" style="height: 18px;">
@@ -1930,7 +2365,7 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                 <div class="signal-bar" style="height: 16px;"></div>
             </div>
         </div>
-        <div class="edu-grid">
+        <div class="edu-grid reveal-stagger">
             <div class="edu-item">
                 <div class="edu-degree">MBA, Business Analytics Specialization</div>
                 <div class="edu-school">NMIMS CDOE, Mumbai</div>
@@ -1947,7 +2382,7 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                 <div class="edu-year">2022</div>
             </div>
         </div>
-        <div class="certs-container">
+        <div class="certs-container reveal-item">
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 36px; border-bottom: 2px solid var(--ink); padding-bottom: 12px;">
                 <div class="certs-title" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">CERTIFICATIONS</div>
                 <div class="signal-list" style="height: 14px;">
@@ -1958,43 +2393,42 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                     <div class="signal-bar"></div>
                 </div>
             </div>
-            <div class="certs-grid">
+            <div class="certs-grid reveal-stagger">
                 <a href="https://certificate.hack2skill.com/user/GenAI5-28M/2025H2S04GENAI-A01754" target="_blank" class="cert-chip cert-link">Gen AI · Hack2Skill · 2025 ↗</a>
                 <a href="https://www.udemy.com/certificate/UC-aabd1c52-44c1-448e-968f-a4979748b448/" target="_blank" class="cert-chip cert-link">Excel Data Analysis · Udemy · 2025 ↗</a>
                 <a href="https://www.educba.com/certificate/?c=SR7JA6VHZ" target="_blank" class="cert-chip cert-link">Graphic Design · EDUCBA · 2025 ↗</a>
                 <a href="https://courses.ibmmooc.skillsnetwork.site/certificates/45d8a6ba065e4a8b97fbf81a8c9a67ac" target="_blank" class="cert-chip cert-link">Cloud Computing · IBM · 2025 ↗</a>
                 <a href="https://www.futurelearn.com/certificates/jo94du2" target="_blank" class="cert-chip cert-link">UX Design · FutureLearn ↗</a>
-                                <a href="https://drive.google.com/file/d/1pm19z5o6Wz4JiPJEAFsglL_nxd-4rWXO/view" target="_blank" class="cert-chip cert-link">NCRTC Internship Certificate ↗</a>
+                <a href="https://drive.google.com/file/d/1pm19z5o6Wz4JiPJEAFsglL_nxd-4rWXO/view" target="_blank" class="cert-chip cert-link">NCRTC Internship Certificate ↗</a>
             </div>
-                       </div>
         </div>
     </section>
 
     <div class="marquee-divider"></div>
-    <div class="marquee-container accent-bg tilt-right reverse">
+    <div class="marquee-container accent-bg tilt-right reverse" data-base-tilt="rotate(2deg) scale(1.05)">
         <div class="marquee-content" style="color: #000;"><span>MACHINE LEARNING &nbsp;✦&nbsp; ETL PIPELINES &nbsp;✦&nbsp; PREDICTIVE MODELING &nbsp;✦&nbsp; BUSINESS INTELLIGENCE &nbsp;✦&nbsp; DATA ARCHITECTURE &nbsp;✦&nbsp; MACHINE LEARNING &nbsp;✦&nbsp; ETL PIPELINES &nbsp;✦&nbsp; PREDICTIVE MODELING &nbsp;✦&nbsp; BUSINESS INTELLIGENCE &nbsp;✦&nbsp; DATA ARCHITECTURE &nbsp;✦&nbsp; MACHINE LEARNING &nbsp;✦&nbsp; ETL PIPELINES &nbsp;✦&nbsp; PREDICTIVE MODELING &nbsp;✦&nbsp; BUSINESS INTELLIGENCE &nbsp;✦&nbsp; DATA ARCHITECTURE &nbsp;✦&nbsp; </span><span>MACHINE LEARNING &nbsp;✦&nbsp; ETL PIPELINES &nbsp;✦&nbsp; PREDICTIVE MODELING &nbsp;✦&nbsp; BUSINESS INTELLIGENCE &nbsp;✦&nbsp; DATA ARCHITECTURE &nbsp;✦&nbsp; MACHINE LEARNING &nbsp;✦&nbsp; ETL PIPELINES &nbsp;✦&nbsp; PREDICTIVE MODELING &nbsp;✦&nbsp; BUSINESS INTELLIGENCE &nbsp;✦&nbsp; DATA ARCHITECTURE &nbsp;✦&nbsp; MACHINE LEARNING &nbsp;✦&nbsp; ETL PIPELINES &nbsp;✦&nbsp; PREDICTIVE MODELING &nbsp;✦&nbsp; BUSINESS INTELLIGENCE &nbsp;✦&nbsp; DATA ARCHITECTURE &nbsp;✦&nbsp; </span></div>
     </div>
     <div class="marquee-divider"></div>
 
     <!-- CONTACT -->
     <section id="contact">
-        <div class="section-header">
+        <div class="section-header reveal-item">
             <span class="section-num">[07]</span>
             <span class="section-title">CONTACT</span>
         </div>
-        <h2 class="contact-headline" id="contact-headline">LET'S WORK.</h2>
-        <div class="contact-main">
+        <h2 class="contact-headline reveal-item" id="contact-headline">LET'S WORK.</h2>
+        <div class="contact-main reveal-item">
             <button class="cta-btn" id="email-btn">[ COPY EMAIL → ]</button>
             <div class="contact-email">amol.singhal25@gmail.com</div>
         </div>
-        <div class="contact-info">
+        <div class="contact-info reveal-item">
             <span>+91 94116 91825</span>
             <span>·</span>
             <span>Ghaziabad, India</span>
             <span>·</span>
             <span>IST</span>
         </div>
-        <div class="contact-links">
+        <div class="contact-links reveal-item">
             <a href="https://www.linkedin.com/in/amol-singhal257/" target="_blank" class="contact-link">[ LINKEDIN ↗ ]</a>
             <a href="mailto:amol.singhal25@gmail.com" class="contact-link">[ EMAIL ↗ ]</a>
             <a href="https://github.com/Amol257/" target="_blank" class="contact-link">[ GITHUB ↗ ]</a>
@@ -2008,28 +2442,177 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
         <div>MADE WITH DATA</div>
     </footer>
 
+    <!-- Lenis Smooth Scroll Script -->
+    <script src="https://unpkg.com/lenis@1.1.20/dist/lenis.min.js"></script>
+
     <script>
         const $ = s => document.querySelector(s);
         const $$ = s => document.querySelectorAll(s);
 
-        // Intersection Observer for Reveal
-        const revealObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => { entry.target.classList.toggle('revealed', entry.isIntersecting); });
-        }, { threshold: 0.1 });
-        $$('section').forEach(s => revealObserver.observe(s));
+        // ── 1. ULTRA-SMOOTH LENIS CONFIGURATION (Apple-Grade Physics) ───────
+        const lenis = new Lenis({
+            lerp: 0.08,             // Buttery smooth fluid interpolation without sluggish delay
+            wheelMultiplier: 0.95,  // Precise, controlled 1:1 wheel response
+            touchMultiplier: 1.2,
+            smoothWheel: true,
+            syncTouch: false,
+            infinite: false
+        });
 
-        // Loader
+        // Track scroll velocity for kinetic animations
+        let currentVelocity = 0;
+        let targetVelocity = 0;
+
+        // Unified RequestAnimationFrame loop
+        function raf(time) {
+            lenis.raf(time);
+            
+            // Velocity smoothing
+            currentVelocity += (targetVelocity - currentVelocity) * 0.12;
+            targetVelocity *= 0.9;
+
+            // Reactive velocity skew on marquees (Awwwards / Apple kinetic feel)
+            const skewVal = Math.max(-4, Math.min(4, currentVelocity * 0.05));
+            document.querySelectorAll('.marquee-container').forEach(m => {
+                const baseTilt = m.dataset.baseTilt || '';
+                m.style.transform = `${baseTilt} skewX(${skewVal}deg)`;
+            });
+
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        // ── 2. SCROLL EVENTS & PARALLAX (Zero Layout-Thrashing) ──────────────
+        const progressEl = $('#scroll-progress');
+        const navbar = $('#navbar');
+        const heroMain = $('#hero-main');
+        const heroSpans = $$('.hero-headline span');
+        let heroFinishedIntro = false;
+
+        lenis.on('scroll', (e) => {
+            targetVelocity = e.velocity || 0;
+            const scrollY = e.scroll;
+            const progress = e.progress;
+
+            // Scroll progress bar
+            if (progressEl) {
+                progressEl.style.width = (progress * 100) + '%';
+            }
+
+            // Sleek navbar background transition on scroll
+            if (navbar) {
+                if (scrollY > 50) {
+                    navbar.classList.add('nav-scrolled');
+                } else {
+                    navbar.classList.remove('nav-scrolled');
+                }
+            }
+
+            // Hero subtle 3D exit parallax (Only after intro animation is done)
+            if (heroFinishedIntro && scrollY < window.innerHeight * 1.2) {
+                const p = scrollY / window.innerHeight;
+                if (heroMain) {
+                    heroMain.style.transform = `translate3d(0, ${scrollY * 0.22}px, 0)`;
+                    heroMain.style.opacity = Math.max(0, 1 - p * 1.25);
+                }
+                heroSpans.forEach((span, i) => {
+                    const depthSpeed = (i % 2 === 0) ? 0.06 : 0.12;
+                    span.style.transform = `translate3d(0, ${scrollY * depthSpeed}px, 0)`;
+                });
+            }
+
+            // Hysteresis-guarded focal plane tracking with generous gap between projects
+            updateActiveProjectOnScroll();
+        });
+
+        // Scroll Down button action using Lenis scrollTo
+        const scrollDownBtn = $('#scroll-down-btn');
+        if (scrollDownBtn) {
+            scrollDownBtn.addEventListener('click', () => {
+                lenis.scrollTo('#about', { offset: -40, duration: 1.2 });
+            });
+        }
+
+        // ── 3. SCROLL REVEAL OBSERVER (Hardware-Accelerated Staggers) ────────
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('revealed');
+                }
+            });
+        }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+        $$('.reveal-item, .reveal-stagger, .marquee-divider').forEach(el => revealObserver.observe(el));
+
+        // ── 4. STICKY DASHBOARD SCROLL SYNCHRONIZATION ────────────────────────
+        // Determines active project based on focal plane with hysteresis to prevent skipping
+        const projectsSec = document.getElementById('projects');
+        let currentActiveIdx = 0;
+        let isUserHovering = false;
+
+        function updateActiveProjectOnScroll() {
+            if (!projectsSec || isUserHovering) return;
+            const pRect = projectsSec.getBoundingClientRect();
+
+            // Only evaluate when inside Selected Work section
+            if (pRect.top <= window.innerHeight * 0.75 && pRect.bottom >= window.innerHeight * 0.25) {
+                const isMobile = window.innerWidth <= 1024;
+                // Reading area focal line aligned with vertically centered dashboard
+                const focalLine = isMobile ? (window.innerHeight * 0.42) : (window.innerHeight * 0.48);
+                const rows = Array.from(document.querySelectorAll('.project-row'));
+                if (rows.length === 0) return;
+
+                let selectedIdx = -1;
+
+                // Priority 1: Which project card contains the focal line?
+                for (let i = 0; i < rows.length; i++) {
+                    const rRect = rows[i].getBoundingClientRect();
+                    if (rRect.top <= focalLine && rRect.bottom >= focalLine) {
+                        selectedIdx = i;
+                        break;
+                    }
+                }
+
+                // Priority 2: In the gap between cards, choose the closest card
+                if (selectedIdx === -1) {
+                    let closestDist = Infinity;
+                    rows.forEach((row, i) => {
+                        const rRect = row.getBoundingClientRect();
+                        const rowCenter = rRect.top + rRect.height / 2;
+                        const dist = Math.abs(rowCenter - focalLine);
+                        if (dist < closestDist) {
+                            closestDist = dist;
+                            selectedIdx = i;
+                        }
+                    });
+                }
+
+                if (selectedIdx !== -1 && selectedIdx !== currentActiveIdx) {
+                    currentActiveIdx = selectedIdx;
+                    rows.forEach((r, i) => {
+                        r.classList.toggle('active-scroll', i === selectedIdx);
+                    });
+                    document.querySelectorAll('.mob-pill').forEach((p, i) => {
+                        p.classList.toggle('active', i === selectedIdx);
+                    });
+                    document.querySelectorAll('.mobile-proj-pill').forEach((p, i) => {
+                        p.classList.toggle('active', i === selectedIdx);
+                    });
+                    updateDashboard(selectedIdx);
+                }
+            }
+        }
+
+        // ── 5. LOADER & HERO INTRO ──────────────────────────────────────────
         const LOADER_NAME = 'AMOL SINGHAL';
 
         function startLoader() {
             const loader = $('#loader');
-            const loaderText = $('#loader-text');
             const loaderCursor = $('#loader-cursor');
             const loaderLine = $('#loader-line');
             let i = 0;
             const type = setInterval(() => {
                 if (i < LOADER_NAME.length) {
-                    // Insert text before the cursor span
                     loaderCursor.insertAdjacentText('beforebegin', LOADER_NAME[i++]);
                 } else {
                     clearInterval(type);
@@ -2039,9 +2622,27 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                         loader.style.transition = 'transform 1s cubic-bezier(0.19, 1, 0.22, 1)';
                         loader.style.transform = 'translateY(-100%)';
                         animateHero();
+                        lenis.resize();
                     }, 900);
                 }
             }, 80);
+        }
+
+        function animateHero() {
+            setTimeout(() => {
+                heroSpans.forEach((span, i) => {
+                    setTimeout(() => { 
+                        span.style.transform = 'translateY(0)'; 
+                    }, 250 * i);
+                });
+                // Remove CSS transition after intro so scroll parallax executes with ZERO lag
+                setTimeout(() => {
+                    heroSpans.forEach(span => {
+                        span.style.transition = 'none';
+                    });
+                    heroFinishedIntro = true;
+                }, 250 * heroSpans.length + 600);
+            }, 500);
         }
 
         function initAboutPipeline() {
@@ -2102,9 +2703,7 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
             const hexHost = document.getElementById('hex-field');
             const packetHosts = document.querySelectorAll('.skill-row .packet-host');
 
-            // Build Hex Field
             if (hexHost) {
-                // Hex tags
                 for (let i = 0; i < 20; i++) {
                     const el = document.createElement('div');
                     el.className = 'hex-tag';
@@ -2114,7 +2713,6 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                     el.style.animationDelay = (i * 0.4) + 's';
                     hexHost.appendChild(el);
                 }
-                // Vias
                 for (let i = 0; i < 20; i++) {
                     const el = document.createElement('div');
                     el.className = 'via';
@@ -2123,7 +2721,6 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                     el.style.animationDelay = (i * 0.3) + 's';
                     hexHost.appendChild(el);
                 }
-                // Blips
                 for (let i = 0; i < 15; i++) {
                     const el = document.createElement('div');
                     el.className = 'blip';
@@ -2132,7 +2729,6 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                     el.style.animationDelay = (i * 0.5) + 's';
                     hexHost.appendChild(el);
                 }
-                // Binary
                 for (let i = 0; i < 10; i++) {
                     const cluster = document.createElement('div');
                     cluster.className = 'bin-cluster';
@@ -2146,7 +2742,6 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                     }
                     hexHost.appendChild(cluster);
                 }
-                // Glitch words
                 ["ENCRYPT","ANALYSIS","KERNEL","DATABASE","NEURAL","BUFFER"].forEach((word, i) => {
                     const el = document.createElement('div');
                     el.className = 'glitch-word';
@@ -2158,35 +2753,25 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                 });
             }
 
-            // Build Packets per row
             packetHosts.forEach(host => {
-                const count = 3 + Math.floor(Math.random() * 3); // 3-5 packets
+                const count = 3 + Math.floor(Math.random() * 3);
                 for (let i = 0; i < count; i++) {
                     const p = document.createElement('div');
                     p.className = 'packet';
                     p.style.top = (10 + Math.random() * 80) + '%';
                     p.style.animationDelay = (Math.random() * 8) + 's';
-                    p.style.animationDuration = (Math.random() * 4 + 5) + 's'; // 5-9s
+                    p.style.animationDuration = (Math.random() * 4 + 5) + 's';
                     host.appendChild(p);
                 }
             });
         }
 
-        // Small delay ensures fonts are painted and animation is always visible
         setTimeout(() => {
             startLoader();
             initAboutPipeline();
             initProjectCodestreams();
             initSkillsVisuals();
         }, 120);
-
-        function animateHero() {
-            setTimeout(() => {
-                $$('.hero-headline span').forEach((span, i) => {
-                    setTimeout(() => { span.style.transform = 'translateY(0)'; }, 250 * i);
-                });
-            }, 600);
-        }
 
         // Cursor
         const cursor = $('#cursor');
@@ -2208,43 +2793,38 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
             el.addEventListener('mouseleave', () => cursor.classList.remove('expand', 'accent'));
         });
 
-        // Scroll progress
-        window.addEventListener('scroll', () => {
-            const winScroll = document.documentElement.scrollTop;
-            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-            $('#scroll-progress').style.width = (winScroll / height * 100) + '%';
-
-            $$('.hero-headline span').forEach((span, i) => {
-                if (span.style.transform !== 'translateY(110%)') {
-                    const speed = (i % 2 === 0) ? 0.08 : 0.14;
-                    span.style.transform = `translateY(${window.scrollY * speed}px)`;
-                }
-            });
-        });
-
-        // Stats counter
+        // ── 6. STATS COUNTER WITH EASED REQUEST-ANIMATION-FRAME ──────────────
         const statsObs = new IntersectionObserver(entries => {
             entries.forEach(entry => {
                 if (!entry.isIntersecting) return;
                 const target = parseInt(entry.target.dataset.target);
-                let count = 0;
-                const step = target / (1500 / 16);
-                const timer = setInterval(() => {
-                    count += step;
-                    if (count >= target) { entry.target.textContent = target; clearInterval(timer); }
-                    else { entry.target.textContent = Math.floor(count); }
-                }, 16);
+                const duration = 1400;
+                const startTime = performance.now();
+                function updateCounter(now) {
+                    const elapsed = now - startTime;
+                    const progress = Math.min(1, elapsed / duration);
+                    // Quintic ease out for Apple-like smoothness
+                    const ease = 1 - Math.pow(1 - progress, 5);
+                    entry.target.textContent = Math.floor(ease * target);
+                    if (progress < 1) {
+                        requestAnimationFrame(updateCounter);
+                    } else {
+                        entry.target.textContent = target;
+                    }
+                }
+                requestAnimationFrame(updateCounter);
                 statsObs.unobserve(entry.target);
             });
-        }, { threshold: 0.5 });
+        }, { threshold: 0.35 });
         $$('.stat-num').forEach(n => statsObs.observe(n));
 
-        // Experience accordion
+        // Experience accordion + Lenis dimension recalculation
         $$('.exp-row').forEach(row => {
             row.addEventListener('click', () => {
                 const active = row.classList.contains('active');
                 $$('.exp-row').forEach(r => r.classList.remove('active'));
                 if (!active) row.classList.add('active');
+                setTimeout(() => lenis.resize(), 650);
             });
         });
 
@@ -2265,7 +2845,6 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                         <g transform="translate(10,60) scale(0.78)">
                             <path class="india-fill" d="${INDIA_PATH}" fill="rgba(var(--accent-rgb), 0.1)" stroke="var(--accent)" stroke-width="1.5"/>
                             <path class="glow-path" d="${INDIA_PATH}"/>
-                            <!-- 10 Major Cities -->
                             <circle class="city-dot" cx="215" cy="231" r="5" fill="var(--accent)" filter="url(#glow)"/>
                             <circle class="city-dot" cx="120" cy="470" r="5" fill="var(--accent)" filter="url(#glow)"/>
                             <circle class="city-dot" cx="225" cy="620" r="5" fill="var(--accent)" filter="url(#glow)"/>
@@ -2313,7 +2892,7 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                 viz: `<div class="aqi-gauge-container">
                         <div class="aqi-top-label">NATIONAL AVERAGE AQI</div>
                         <div class="aqi-main-status">POOR AIR QUALITY</div>
-                        <svg viewBox="0 0 550 300" class="svg-viz" style="margin-top: 5px;">
+                        <svg viewBox="0 0 550 290" class="svg-viz" style="margin-top: 2px; max-height: 140px;">
                             <defs>
                                 <linearGradient id="gauge-grad" x1="0" y1="0" x2="1" y2="0">
                                     <stop offset="0%" stop-color="#c8ff00" />
@@ -2321,16 +2900,12 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                                     <stop offset="100%" stop-color="#ff6a00" />
                                 </linearGradient>
                             </defs>
-                            <!-- Gauge Background -->
                             <path class="gauge-track" d="M 150 240 A 125 125 0 0 1 400 240" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="35" stroke-linecap="round"/>
-                            <!-- Gauge Fill (Identical path, dash-limited) -->
                             <path d="M 150 240 A 125 125 0 0 1 400 240" fill="none" stroke="var(--accent)" stroke-width="35" stroke-linecap="round" stroke-dasharray="85 393"/>
                             
-                            <!-- Value text -->
                             <text x="275" y="215" class="gauge-value" fill="#fff" font-size="90" font-family="var(--font-display)" text-anchor="middle">102</text>
                             <text x="275" y="250" fill="var(--muted)" font-size="10" font-family="var(--font-mono)" letter-spacing="2" text-anchor="middle">PM 2.5 INDEX</text>
                             
-                            <!-- Precise End dots -->
                             <circle cx="150" cy="240" r="8" fill="#f59e0b" />
                             <circle cx="400" cy="240" r="8" fill="#f59e0b" />
                         </svg>
@@ -2376,28 +2951,28 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                 viz: `<div class="aqi-gauge-container">
                         <div class="aqi-top-label">TOP COMPOSITE SCORE</div>
                         <div class="aqi-main-status">HDFC TOP 100 — 100.0</div>
-                        <svg viewBox="0 0 550 260" class="svg-viz" style="margin-top: 10px;">
+                        <svg viewBox="0 0 550 250" class="svg-viz" style="margin-top: 2px; max-height: 140px;">
                             <g font-family="var(--font-mono)" font-size="11" fill="var(--muted)">
-                                <rect x="60" y="20" width="430" height="28" fill="rgba(var(--accent-rgb), 0.18)" />
-                                <rect x="60" y="20" width="430" height="28" fill="none" stroke="var(--accent)" stroke-width="1"/>
-                                <text x="50" y="38" text-anchor="end" fill="#fff">Large Cap</text>
-                                <text x="500" y="38" fill="#fff">100.0</text>
+                                <rect x="110" y="16" width="370" height="26" fill="rgba(var(--accent-rgb), 0.18)" />
+                                <rect x="110" y="16" width="370" height="26" fill="none" stroke="var(--accent)" stroke-width="1"/>
+                                <text x="100" y="33" text-anchor="end" fill="#fff">Large Cap</text>
+                                <text x="490" y="33" fill="#fff">100.0</text>
 
-                                <rect x="60" y="64" width="421" height="28" fill="rgba(var(--accent-rgb), 0.16)" />
-                                <text x="50" y="82" text-anchor="end" fill="#fff">ELSS Tax Saver</text>
-                                <text x="491" y="82" fill="#fff">98.1</text>
+                                <rect x="110" y="58" width="362" height="26" fill="rgba(var(--accent-rgb), 0.16)" />
+                                <text x="100" y="75" text-anchor="end" fill="#fff">ELSS Tax Saver</text>
+                                <text x="482" y="75" fill="#fff">98.1</text>
 
-                                <rect x="60" y="108" width="318" height="28" fill="rgba(var(--accent-rgb), 0.13)" />
-                                <text x="50" y="126" text-anchor="end" fill="#fff">Small Cap</text>
-                                <text x="388" y="126" fill="#fff">74.0</text>
+                                <rect x="110" y="100" width="273" height="26" fill="rgba(var(--accent-rgb), 0.13)" />
+                                <text x="100" y="117" text-anchor="end" fill="#fff">Small Cap</text>
+                                <text x="393" y="117" fill="#fff">74.0</text>
 
-                                <rect x="60" y="152" width="276" height="28" fill="rgba(var(--accent-rgb), 0.11)" />
-                                <text x="50" y="170" text-anchor="end" fill="#fff">Mid Cap</text>
-                                <text x="346" y="170" fill="#fff">64.2</text>
+                                <rect x="110" y="142" width="237" height="26" fill="rgba(var(--accent-rgb), 0.11)" />
+                                <text x="100" y="159" text-anchor="end" fill="#fff">Mid Cap</text>
+                                <text x="357" y="159" fill="#fff">64.2</text>
 
-                                <rect x="60" y="196" width="201" height="28" fill="rgba(var(--accent-rgb), 0.08)" />
-                                <text x="50" y="214" text-anchor="end" fill="#fff">Index Funds</text>
-                                <text x="271" y="214" fill="#fff">46.7</text>
+                                <rect x="110" y="184" width="172" height="26" fill="rgba(var(--accent-rgb), 0.08)" />
+                                <text x="100" y="201" text-anchor="end" fill="#fff">Index Funds</text>
+                                <text x="292" y="201" fill="#fff">46.7</text>
                             </g>
                         </svg>
                         <div class="aqi-footer-stats">
@@ -2435,7 +3010,6 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                     ]
                 }
             }
-
         ];
 
         // Dashboard Elements
@@ -2452,22 +3026,20 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
         const dbTitle = $('.dashboard-title');
         const dbTerminal = $('#dashboard-terminal');
 
-        function triggerScanline() {
-            const scan = $('.scan-overlay');
-            if (!scan) return;
-            // The scanline is now handled by an infinite CSS animation for a smoother experience
-        }
-
         let isUpdating = false;
+        let activeDashboardIdx = -1;
+
         function updateDashboard(index) {
-            if (isUpdating) return;
+            document.querySelectorAll('.mobile-proj-pill').forEach((p, i) => {
+                p.classList.toggle('active', i === index);
+            });
+
+            if (activeDashboardIdx === index || isUpdating) return;
             const data = dashboardData[index];
             if (!data) return;
 
+            activeDashboardIdx = index;
             isUpdating = true;
-            // Trigger scan animation
-            triggerScanline();
-
             dbContent.classList.add('changing');
 
             setTimeout(() => {
@@ -2476,18 +3048,13 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                 dbTableLabel.textContent = data.table.label;
                 dbTerminal.innerHTML = `${data.terminal} <span class="terminal-cursor"></span>`;
                 
-                // Update Table Headers
                 dbTh1.textContent = data.table.headers[0];
                 dbTh2.textContent = data.table.headers[1];
                 dbTh3.textContent = data.table.headers[2];
 
-                // Update Viz
                 dbMainViz.innerHTML = `<div class="scan-overlay"></div>${data.viz}`;
-                
-                // Update Overlay Stats
                 dbMapStats.innerHTML = data.overlay;
 
-                // Update KPIs
                 dbKpiGrid.innerHTML = data.kpis.map(kpi => `
                     <div class="kpi-mini-card">
                         <div class="kpi-mini-row">
@@ -2500,7 +3067,6 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                     </div>
                 `).join('');
 
-                // Update Table Body
                 dbTableBody.innerHTML = data.table.rows.map(row => `
                     <div class="tr-row">
                         <div class="td-cell">${row[0]}</div>
@@ -2511,29 +3077,197 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
 
                 dbContent.classList.remove('changing');
                 isUpdating = false;
-            }, 200);
+            }, 180);
         }
 
-        $$('.project-row').forEach((row, idx) => {
-            // High-fidelity mobile response: Update dashboard on contact
-            row.addEventListener('touchstart', () => {
-                updateDashboard(idx);
-            }, { passive: true });
+        function initMobileProjectVisuals() {
+            const mob0 = document.getElementById('mob-viz-0');
+            const mob1 = document.getElementById('mob-viz-1');
+            const mob2 = document.getElementById('mob-viz-2');
+            if (!mob0 || !mob1 || !mob2) return;
 
+            // Project 0: PM-eBus Map & BTM stats
+            mob0.innerHTML = `
+                <div class="mob-viz-header">
+                    <span class="mob-viz-title">Depot Coverage — State Distribution</span>
+                    <span class="dashboard-status status-badge"><span class="status-dot"></span> LIVE</span>
+                </div>
+                <div class="mob-viz-body">
+                    <svg viewBox="0 0 550 560" class="svg-viz" style="width: 100%; height: auto; max-height: 230px;">
+                        <defs><filter id="glow-mob"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+                        <g transform="translate(45, 10) scale(0.68)">
+                            <path class="india-fill" d="${INDIA_PATH}" fill="rgba(var(--accent-rgb), 0.12)" stroke="var(--accent)" stroke-width="1.6"/>
+                            <circle class="city-dot" cx="215" cy="231" r="6" fill="var(--accent)" filter="url(#glow-mob)"/>
+                            <circle class="city-dot" cx="120" cy="470" r="6" fill="var(--accent)" filter="url(#glow-mob)"/>
+                            <circle class="city-dot" cx="225" cy="620" r="6" fill="var(--accent)" filter="url(#glow-mob)"/>
+                            <circle class="city-dot" cx="270" cy="640" r="5" fill="var(--accent)" filter="url(#glow-mob)"/>
+                            <circle class="city-dot" cx="420" cy="360" r="5" fill="var(--accent)" filter="url(#glow-mob)"/>
+                            <circle class="city-dot" cx="230" cy="520" r="5" fill="var(--accent)" filter="url(#glow-mob)"/>
+                            <circle class="city-dot" cx="100" cy="380" r="5" fill="var(--accent)" filter="url(#glow-mob)"/>
+                            <circle class="city-dot" cx="140" cy="490" r="5" fill="var(--accent)" filter="url(#glow-mob)"/>
+                            <circle class="city-dot" cx="270" cy="270" r="5" fill="var(--accent)" filter="url(#glow-mob)"/>
+                            <circle class="city-dot" cx="180" cy="280" r="5" fill="var(--accent)" filter="url(#glow-mob)"/>
+                        </g>
+                    </svg>
+                </div>
+                <div class="mob-stats-row">
+                    <div>
+                        <span class="mob-stat-lbl">TOTAL BTM RELEASED</span>
+                        <div class="mob-stat-val">₹395.20 CR</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="mob-stat-lbl">ACTIVE STATES</span>
+                        <div class="mob-stat-val" style="color:var(--ink)">14 STATES</div>
+                    </div>
+                </div>
+                <div class="mob-kpi-row">
+                    <div class="mob-kpi-item">
+                        <div class="mob-kpi-top"><span>Fund Utilisation</span><span>78%</span></div>
+                        <div class="kpi-mini-bar-bg"><div class="kpi-mini-bar-fill" style="width: 78%"></div></div>
+                    </div>
+                    <div class="mob-kpi-item">
+                        <div class="mob-kpi-top"><span>Node Stability</span><span>99.2%</span></div>
+                        <div class="kpi-mini-bar-bg"><div class="kpi-mini-bar-fill" style="width: 99%"></div></div>
+                    </div>
+                </div>
+            `;
+
+            // Project 1: India AQI Gauge & Stations
+            mob1.innerHTML = `
+                <div class="mob-viz-header">
+                    <span class="mob-viz-title">National AQI Overview</span>
+                    <span class="dashboard-status status-badge"><span class="status-dot"></span> LIVE</span>
+                </div>
+                <div class="mob-viz-body">
+                    <div style="text-align:center; padding-top:4px;">
+                        <div style="font-family:var(--font-mono); font-size:0.6rem; color:var(--accent); letter-spacing:1.5px; margin-bottom:2px;">NATIONAL AVERAGE AQI</div>
+                        <div style="font-family:var(--font-display); font-size:1.15rem; color:var(--ink); letter-spacing:1px; margin-bottom:4px;">POOR AIR QUALITY</div>
+                    </div>
+                    <svg viewBox="0 0 500 240" class="svg-viz" style="width: 100%; height: auto; max-height: 180px;">
+                        <path d="M 125 200 A 125 125 0 0 1 375 200" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="28" stroke-linecap="round"/>
+                        <path d="M 125 200 A 125 125 0 0 1 375 200" fill="none" stroke="var(--accent)" stroke-width="28" stroke-linecap="round" stroke-dasharray="85 393"/>
+                        <text x="250" y="175" class="gauge-value" fill="var(--ink)" font-size="78" font-family="var(--font-display)" text-anchor="middle">102</text>
+                        <text x="250" y="200" fill="var(--muted)" font-size="10" font-family="var(--font-mono)" letter-spacing="2" text-anchor="middle">PM 2.5 INDEX</text>
+                        <circle cx="125" cy="200" r="7" fill="#f59e0b" />
+                        <circle cx="375" cy="200" r="7" fill="#f59e0b" />
+                    </svg>
+                </div>
+                <div class="mob-stats-row">
+                    <div>
+                        <span class="mob-stat-lbl">24H PEAK</span>
+                        <div class="mob-stat-val" style="color:#f87171">341</div>
+                        <span class="mob-stat-sub">Khora</span>
+                    </div>
+                    <div style="text-align: center;">
+                        <span class="mob-stat-lbl">CLEANEST</span>
+                        <div class="mob-stat-val" style="color:#4ade80">10</div>
+                        <span class="mob-stat-sub">Samastipur</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="mob-stat-lbl">ACTIVE STATIONS</span>
+                        <div class="mob-stat-val" style="color:var(--ink)">511</div>
+                        <span class="mob-stat-sub">99.8% Online</span>
+                    </div>
+                </div>
+                <div class="mob-kpi-row">
+                    <div class="mob-kpi-item">
+                        <div class="mob-kpi-top"><span>Sensor Health</span><span>94.5%</span></div>
+                        <div class="kpi-mini-bar-bg"><div class="kpi-mini-bar-fill" style="width: 94.5%"></div></div>
+                    </div>
+                    <div class="mob-kpi-item">
+                        <div class="mob-kpi-top"><span>Data Latency</span><span>120ms</span></div>
+                        <div class="kpi-mini-bar-bg"><div class="kpi-mini-bar-fill" style="width: 25%"></div></div>
+                    </div>
+                </div>
+            `;
+
+            // Project 2: FundScope Category Bars & Alpha
+            mob2.innerHTML = `
+                <div class="mob-viz-header">
+                    <span class="mob-viz-title">Composite Score by Category</span>
+                    <span class="dashboard-status status-badge"><span class="status-dot"></span> LIVE</span>
+                </div>
+                <div class="mob-viz-body">
+                    <div style="text-align:center; padding-top:4px;">
+                        <div style="font-family:var(--font-mono); font-size:0.6rem; color:var(--accent); letter-spacing:1.5px; margin-bottom:2px;">TOP COMPOSITE SCORE</div>
+                        <div style="font-family:var(--font-display); font-size:1.15rem; color:var(--ink); letter-spacing:1px; margin-bottom:4px;">HDFC TOP 100 — 100.0</div>
+                    </div>
+                    <svg viewBox="0 0 520 215" class="svg-viz" style="width: 100%; height: auto; max-height: 190px; margin-top: 6px;">
+                        <g font-family="var(--font-mono)" font-size="11" fill="var(--muted)">
+                            <text x="120" y="28" text-anchor="end" fill="var(--ink)">Large Cap</text>
+                            <rect x="130" y="12" width="320" height="24" rx="2" fill="rgba(var(--accent-rgb), 0.2)" stroke="var(--accent)" stroke-width="1"/>
+                            <text x="460" y="28" fill="var(--accent)" font-weight="600">100.0</text>
+
+                            <text x="120" y="68" text-anchor="end" fill="var(--ink)">ELSS Tax Saver</text>
+                            <rect x="130" y="52" width="313" height="24" rx="2" fill="rgba(var(--accent-rgb), 0.16)"/>
+                            <text x="453" y="68" fill="var(--ink)">98.1</text>
+
+                            <text x="120" y="108" text-anchor="end" fill="var(--ink)">Small Cap</text>
+                            <rect x="130" y="92" width="236" height="24" rx="2" fill="rgba(var(--accent-rgb), 0.13)"/>
+                            <text x="376" y="108" fill="var(--ink)">74.0</text>
+
+                            <text x="120" y="148" text-anchor="end" fill="var(--ink)">Mid Cap</text>
+                            <rect x="130" y="132" width="205" height="24" rx="2" fill="rgba(var(--accent-rgb), 0.11)"/>
+                            <text x="345" y="148" fill="var(--ink)">64.2</text>
+
+                            <text x="120" y="188" text-anchor="end" fill="var(--ink)">Index Funds</text>
+                            <rect x="130" y="172" width="149" height="24" rx="2" fill="rgba(var(--accent-rgb), 0.08)"/>
+                            <text x="289" y="188" fill="var(--ink)">46.7</text>
+                        </g>
+                    </svg>
+                </div>
+                <div class="mob-stats-row">
+                    <div>
+                        <span class="mob-stat-lbl">FUNDS RANKED</span>
+                        <div class="mob-stat-val" style="color:var(--ink)">32</div>
+                        <span class="mob-stat-sub">5 Categories</span>
+                    </div>
+                    <div style="text-align: center;">
+                        <span class="mob-stat-lbl">TOP 5Y ALPHA</span>
+                        <div class="mob-stat-val" style="color:#4ade80">+10.29%</div>
+                        <span class="mob-stat-sub">quant Small Cap</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="mob-stat-lbl">BENCHMARK</span>
+                        <div class="mob-stat-val" style="color:var(--ink)">7.0%</div>
+                        <span class="mob-stat-sub">Govt 10Y Yield</span>
+                    </div>
+                </div>
+                <div class="mob-kpi-row">
+                    <div class="mob-kpi-item">
+                        <div class="mob-kpi-top"><span>Active vs Index CAGR</span><span>12.7% / 9.3%</span></div>
+                        <div class="kpi-mini-bar-bg"><div class="kpi-mini-bar-fill" style="width: 73%"></div></div>
+                    </div>
+                    <div class="mob-kpi-item">
+                        <div class="mob-kpi-top"><span>Data Pipeline Health</span><span>96.8%</span></div>
+                        <div class="kpi-mini-bar-bg"><div class="kpi-mini-bar-fill" style="width: 96.8%"></div></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        const projectCards = $$('.project-row');
+        projectCards.forEach((row, idx) => {
             row.addEventListener('click', () => {
+                currentActiveIdx = idx;
+                projectCards.forEach((r, i) => r.classList.toggle('active-scroll', i === idx));
+                document.querySelectorAll('.mob-pill').forEach((p, i) => p.classList.toggle('active', i === idx));
+                document.querySelectorAll('.mobile-proj-pill').forEach((p, i) => p.classList.toggle('active', i === idx));
                 updateDashboard(idx);
                 const isOpen = row.classList.contains('open');
-                $$('.project-row').forEach(r => r.classList.remove('open'));
+                projectCards.forEach(r => r.classList.remove('open'));
                 if (!isOpen) row.classList.add('open');
+                setTimeout(() => lenis.resize(), 600);
             });
 
             row.addEventListener('mouseenter', () => {
                 if (isTouchDevice()) return;
-                
-                // Dashboard Update
+                isUserHovering = true;
+                currentActiveIdx = idx;
+                projectCards.forEach((r, i) => r.classList.toggle('active-scroll', i === idx));
+                document.querySelectorAll('.mob-pill').forEach((p, i) => p.classList.toggle('active', i === idx));
+                document.querySelectorAll('.mobile-proj-pill').forEach((p, i) => p.classList.toggle('active', i === idx));
                 updateDashboard(idx);
-
-                // Background Update
                 if (projectBg) {
                     projectBg.style.backgroundImage = `url(${row.dataset.bg})`;
                     projectBg.style.opacity = '1';
@@ -2541,13 +3275,68 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
             });
 
             row.addEventListener('mouseleave', () => {
-                if (isTouchDevice() || !projectBg) return;
-                projectBg.style.opacity = '0';
+                if (isTouchDevice()) return;
+                isUserHovering = false;
+                if (projectBg) projectBg.style.opacity = '0';
             });
         });
 
-        // Initialize first dashboard
+        // Mobile sticky jumper pill buttons click handling
+        document.querySelectorAll('.mob-pill').forEach(pill => {
+            pill.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(pill.dataset.index, 10);
+                if (isNaN(idx)) return;
+                currentActiveIdx = idx;
+
+                document.querySelectorAll('.mob-pill').forEach((p, i) => {
+                    p.classList.toggle('active', i === idx);
+                });
+                document.querySelectorAll('.mobile-proj-pill').forEach((p, i) => {
+                    p.classList.toggle('active', i === idx);
+                });
+
+                projectCards.forEach((r, i) => r.classList.toggle('active-scroll', i === idx));
+                updateDashboard(idx);
+
+                const targetRow = projectCards[idx];
+                if (targetRow) {
+                    lenis.scrollTo(targetRow, { offset: -95, duration: 0.85 });
+                }
+            });
+        });
+
+        // Mobile project quick-switch pill buttons click handling (desktop dashboard pane)
+        document.querySelectorAll('.mobile-proj-pill').forEach(pill => {
+            pill.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(pill.dataset.index, 10);
+                if (isNaN(idx)) return;
+                currentActiveIdx = idx;
+
+                document.querySelectorAll('.mob-pill').forEach((p, i) => {
+                    p.classList.toggle('active', i === idx);
+                });
+                document.querySelectorAll('.mobile-proj-pill').forEach((p, i) => {
+                    p.classList.toggle('active', i === idx);
+                });
+
+                projectCards.forEach((r, i) => r.classList.toggle('active-scroll', i === idx));
+                updateDashboard(idx);
+
+                const targetRow = projectCards[idx];
+                if (targetRow) {
+                    const isMobile = window.innerWidth <= 1024;
+                    const scrollOffset = isMobile ? -95 : -100;
+                    lenis.scrollTo(targetRow, { offset: scrollOffset, duration: 0.85 });
+                }
+            });
+        });
+
+        // Initialize first dashboard, mobile visuals, and active highlight
+        projectCards[0]?.classList.add('active-scroll');
         updateDashboard(0);
+        initMobileProjectVisuals();
 
         // Section number highlight on scroll
         const sections = $$('section[id]');
@@ -2555,9 +3344,7 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
         const sectionObserver = new IntersectionObserver(entries => {
             entries.forEach(entry => {
                 if (!entry.isIntersecting) return;
-                // Remove active from all
                 sectionNums.forEach(n => n.classList.remove('active'));
-                // Find matching section-num by index
                 const idx = Array.from(sections).indexOf(entry.target);
                 if (idx >= 0 && sectionNums[idx]) {
                     sectionNums[idx].classList.add('active');
@@ -2612,7 +3399,7 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
             };
         }
 
-        // ── EFFECT 1: Floating Particle Network ──────────────────────────────
+        // ── EFFECT 1: Floating Particle Network (OPTIMIZED ZERO-REFLOW) ───────
         (function() {
             const canvas = document.getElementById('canvas-particles');
             const ctx = canvas.getContext('2d');
@@ -2620,10 +3407,15 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
 
             function isMobile() { return window.innerWidth <= 768; }
 
-            function resize() {
+            // Pre-cached section boundary offsets to eliminate getBoundingClientRect layout thrashing
+            let heroH = 800;
+            let expTop = 0, expBottom = 0;
+            let skillsTop = 0, skillsBottom = 0;
+
+            function cacheSectionMetrics() {
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
-                const count = isMobile() ? 10 : 18;
+                const count = isMobile() ? 10 : 16;
                 nodes = [];
                 for (let i = 0; i < count; i++) {
                     nodes.push({
@@ -2634,43 +3426,33 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                         r: Math.random() * 2 + 1
                     });
                 }
+                const heroEl = document.getElementById('hero');
+                const expEl = document.getElementById('experience');
+                const skillsEl = document.getElementById('skills');
+                if (heroEl) heroH = heroEl.offsetHeight;
+                if (expEl) { expTop = expEl.offsetTop; expBottom = expTop + expEl.offsetHeight; }
+                if (skillsEl) { skillsTop = skillsEl.offsetTop; skillsBottom = skillsTop + skillsEl.offsetHeight; }
             }
-            resize();
-            window.addEventListener('resize', resize);
+            cacheSectionMetrics();
+            window.addEventListener('resize', cacheSectionMetrics);
 
             let currentAlpha = 0.18;
             let currentRGB = { r: 240, g: 236, b: 228 };
 
             function draw() {
                 const mobile = isMobile();
-                const hero = document.getElementById('hero');
-                const expSec = document.getElementById('experience');
-                const skillsSec = document.getElementById('skills');
-                
-                // Detection for section specific color
-                const inHero = mobile && hero && window.scrollY < hero.offsetHeight;
-                
-                let inExperience = false;
-                if (expSec) {
-                    const rect = expSec.getBoundingClientRect();
-                    inExperience = rect.top < window.innerHeight && rect.bottom > 0;
-                }
+                const scrollY = lenis.scroll || 0;
+                const inHero = mobile && (scrollY < heroH);
+                const inExperience = (scrollY + window.innerHeight > expTop) && (scrollY < expBottom);
+                const inSkills = (scrollY + window.innerHeight > skillsTop) && (scrollY < skillsBottom);
 
-                let inSkills = false;
-                if (skillsSec) {
-                    const sRect = skillsSec.getBoundingClientRect();
-                    inSkills = sRect.top < window.innerHeight && sRect.bottom > 0;
-                }
-
-                const CONNECT_DIST = mobile ? 120 : 280;
-                const LINE_W      = mobile ? 0.8  : 0.8;
+                const CONNECT_DIST = mobile ? 120 : 250;
+                const LINE_W      = mobile ? 0.7  : 0.75;
                 
-                // Targets for lerping
                 const theme = getThemeColors();
-                const targetAlpha = inSkills ? 0 : (inExperience ? 0.4 : (inHero ? 0.06 : 0.18));
+                const targetAlpha = inSkills ? 0 : (inExperience ? 0.35 : (inHero ? 0.06 : 0.18));
                 const targetRGB   = inExperience ? theme.accent : theme.base;
 
-                // Smooth interpolation
                 currentAlpha += (targetAlpha - currentAlpha) * 0.05;
                 currentRGB.r += (targetRGB.r - currentRGB.r) * 0.05;
                 currentRGB.g += (targetRGB.g - currentRGB.g) * 0.05;
@@ -2696,7 +3478,7 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                             ctx.moveTo(nodes[i].x, nodes[i].y);
                             ctx.lineTo(nodes[j].x, nodes[j].y);
                             ctx.strokeStyle = `rgba(${LINE_COLOR},${MAX_ALPHA * (1 - dist / CONNECT_DIST)})`;
-                            ctx.lineWidth = inExperience ? LINE_W * 1.5 : LINE_W;
+                            ctx.lineWidth = inExperience ? LINE_W * 1.4 : LINE_W;
                             ctx.stroke();
                         }
                     }
@@ -2706,21 +3488,13 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                     ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
                     ctx.fillStyle = NODE_COLOR;
                     ctx.fill();
-                    
-                    if (inExperience) {
-                        const theme = getThemeColors();
-                        ctx.shadowBlur = 25;
-                        ctx.shadowColor = `rgba(${theme.accent.r}, ${theme.accent.g}, ${theme.accent.b}, 0.8)`;
-                    } else {
-                        ctx.shadowBlur = 0;
-                    }
                 });
                 requestAnimationFrame(draw);
             }
             draw();
         })();
 
-        // ── EFFECT 3: Perspective Grid ────────────────────────────────────────
+        // ── EFFECT 3: Perspective Grid (OPTIMIZED ZERO-REFLOW) ───────────────
         (function() {
             const canvas = document.getElementById('canvas-grid');
             const ctx = canvas.getContext('2d');
@@ -2766,9 +3540,8 @@ Incorporated sprint-by-sprint user feedback in an Agile workflow, reducing total
                 const vpX = W * (0.5 + (mouseX - 0.5) * 0.12);
                 const vpY = H * (0.62 + (mouseY - 0.5) * 0.06);
 
-                // On mobile: fewer lines to avoid overlap with hero text
-                const VCOLS      = mobile ? 8  : 18;
-                const HROWS      = mobile ? 5  : 10;
+                const VCOLS      = mobile ? 8  : 16;
+                const HROWS      = mobile ? 5  : 9;
                 const pulse = Math.sin(phase) * 0.5 + 0.5;
 
                 for (let r = 0; r <= HROWS; r++) {
